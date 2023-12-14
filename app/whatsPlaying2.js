@@ -4,6 +4,8 @@
  * https://github.com/gregtbrown/whatsPlaying
  * ***********************************************/
 
+// additional code by drdude684
+
 var SVGNS = 'http://www.w3.org/2000/svg';
 var SVGXLINK = 'http://www.w3.org/1999/xlink';
 
@@ -33,8 +35,6 @@ var gCurScreen;
 var gUpdateTimer;
 var gNowPlaying = {deviceId: 'unknown device'};
 var gLastVal = {playPerc: -1, deviceId: 'unknown device'};  // cache of previous values
-var gPlayerName = 'unknown device';
-var gLastDebugLine = '';
 var gNowScanning = true;
 var gCurrentServer=0;
 
@@ -140,7 +140,6 @@ function debug(msg) {
   if (!Config.debug)
     return;
   console.log(msg);
-  gLastDebugLine=JSON.stringify(msg);
 }
 
 function hasClass(elem, className) { return elem.classList.contains(className); }
@@ -178,8 +177,6 @@ function format(string, args) {
 function uiCmd(cmd) {
 
   var arg = gLastVal.deviceId ? `?device_id=${gLastVal.deviceId}` : null;
-debug(179);
-debug(arg);
 
   if (cmd === 'play') {
     spotifyApi(gNowPlaying.isPlaying ? spotifyRoutes.playPause : spotifyRoutes.playPlay, arg);
@@ -635,10 +632,8 @@ async function getPlaybackState() {
         gNowPlaying.track = track.name;
         
         gNowPlaying.album = album.name;
-        //gNowPlaying.album = gNowPlaying.deviceName + (Config.preferedPlayer===gNowPlaying.deviceName?" (prefered)":" (not prefered)");
         
         gNowPlaying.artist = getArtistName(track.artists); 
-        //gNowPlaying.artist = gLastDebugLine.valueOf();
         
         gNowPlaying.date = getYearFromDate(album.release_date, album.release_date_precision);
         gNowPlaying.explicit = track.explicit;
