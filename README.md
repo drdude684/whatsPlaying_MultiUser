@@ -1,4 +1,9 @@
 # whatsPlaying
+<drdude684: I am trying to morph gregtbrown's sweet code into something 
+that supports my needs. Essentially, what I need is a display that shows 
+what is playing on a specific player, with multiple people having access 
+to that specific player)
+
 whatsPlaying is an app that displays "what's playing" on your Spotify account.
 
 Sometimes you want to know the current song that's playing, or the artist, or maybe what year the song was, all without constantly popping your phone in and out of your pocket.  This is especially true if you're playing a Spotify radio station, or if you have friends over who are curious what you're listening to.
