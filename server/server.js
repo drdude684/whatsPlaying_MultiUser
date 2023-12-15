@@ -170,7 +170,7 @@ function debug(msg) {
 
 // start the server
 async function run() {
-	if (process.argv.length>1){
+	if (process.argv.length>2){
 		debug('startup argument detected ('+process.argv[2]+')');
 		Config = require(Path.join(__dirname,process.argv[2]));
 	}
