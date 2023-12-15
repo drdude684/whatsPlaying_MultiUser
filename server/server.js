@@ -3,6 +3,7 @@
  * Copyright (C) Greg Brown, All rights reserved.
  * https://github.com/gregtbrown/whatsPlaying
  * ***********************************************/
+ // some changes by drdude684
 
 'use strict';
 
@@ -13,7 +14,9 @@ const Querystring = require('querystring');
 const RequestLib = require('request');
 const OS = require('os');
 const FS = require('fs');
-const Config = require('./myconfig');
+
+
+var Config = require('./myconfig');
 
 // -- globals --
 
@@ -41,7 +44,6 @@ process.on('unhandledRejection', (err) => {
 
 // create the server
 function createServer() {
-
   if (typeof Config.port === 'undefined')
     Config.port = 80;
 
@@ -168,6 +170,10 @@ function debug(msg) {
 
 // start the server
 async function run() {
+	if (process.argv.length>1){
+		debug('startup argument detected ('+process.argv[2]+')');
+		Config = require(Path.join(__dirname,process.argv[2]));
+	}
   var server = createServer();
   setupRoutes(server);
   loadTokenInfo();
