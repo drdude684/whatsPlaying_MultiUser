@@ -16,7 +16,7 @@ const Config = require('./myconfig');
 var net = require('net');
 var client;
 
-var currentStatus={power:'UNKNOWN',volume:'UNKNOWN',sourceindex:'-1',mute:'UNKNOWN',streamtype:'UNKNOWN'};
+var currentStatus={power:'UNKNOWN',volume:'UNKNOWN',sourceIndex:'-1',mute:'UNKNOWN',streamType:'UNKNOWN'};
 
 
 // -- globals --
@@ -180,9 +180,9 @@ function processResponse(resp){
 			  switch(verb){
 				  case 'PWR': currentStatus.power=val;break;
 				  case 'VOL': currentStatus.volume=val;break;
-				  case 'SRC': currentStatus.sourceindex=val;break;
+				  case 'SRC': currentStatus.sourceIndex=val;break;
 				  case 'MUTE': currentStatus.mute=val;break;
-				  case 'STREAMTYPE': currentStatus.streamtype=val;break;				  
+				  case 'STREAMTYPE': currentStatus.streamType=val;break;				  
 			  }
 			  verb='';
 			  val='';
