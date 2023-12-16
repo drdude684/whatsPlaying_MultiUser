@@ -12,7 +12,7 @@ Config = {
 
   debug: true,  // show debugging msgs
 
-  serverUrls: ['http://audiopi.local:8000/','http://audiopi.local:8001/'],  // how to connect to our server
+  serverUrls: ['http://localhost:8000/','http://localhost:8001/'],  // how to connect to our server
   idleMinutes: 5,                  // idle time, in minutes, before we enter idle mode
   sleepMinutes: 20,                // idle time, in minutes, before we enter sleep mode, or 0 to disable
 
@@ -22,5 +22,6 @@ Config = {
   showMouse: true,            // show the mouse cursor
   showPlayerControls: true,  // show player controls
 
-  preferedPlayer: 'TDAI-1120'  // set to '' to allow all players
+  preferedPlayer: 'iPad',  // set to '' to allow all players
+  lyngdorfServer: 'http://localhost:8008',
 };

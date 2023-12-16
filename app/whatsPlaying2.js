@@ -35,11 +35,14 @@ var gCurScreen;
 var gUpdateTimer;
 var gNowPlaying = {deviceId: 'unknown device'};
 var gLastVal = {playPerc: -1, deviceId: 'unknown device'};  // cache of previous values
-var gNowScanning = true;
-var gCurrentServer=0;
+var gNowScanning = false;
+var gState = 'init';
+var gCurrentServer = 0;
 
 var gAccessToken;  // store this from last call, but null on error
 var gPlayerId;  // store this from last call
+
+var ampStatus = {power:'Undefined',volume:'undefined',sourceIndex:'Unknown',sourceName:'Unknown',mute:'Unknown',streamType:'Unknown'}; // status of associated lyngdorf device
 
 // run single setInterval timer and handle our own timers manually in that
 var gTimer = {
@@ -68,6 +71,11 @@ var gTimer = {
     interval: 5000,
     lastTic: 0,
   },
+  ampscan: {
+    callback: updateAmpScan,
+    interval: 2000,
+    lastTic: 0,
+  },
 };
 
 
@@ -91,9 +99,8 @@ async function initialize() {
   // trap our hotkeys
   window.addEventListener("keydown", function(event)
   {
-    if (gNowPlaying.isSleeping) {  // any key to wake
-      gNowPlaying.isSleeping = false;
-      updatePlayback();
+    if (gState=='sleep') {  // any key to wake
+      setState('wait');
     }
     else if (event.keyCode == 37) {    // left arrow
       uiCmd('prev');
@@ -128,11 +135,14 @@ async function initialize() {
   handleError(res);
   // initial update
   updateClock();
-  await updateServer();
+  updateAmp();
+  //await updateServer();
 
   setInterval(timerUpdates, 1000);
+  
+  // always start by showing the clock
+  setState('wait');
 }
-
 
 // -- generic helpers --
 
@@ -179,7 +189,7 @@ function uiCmd(cmd) {
   var arg = gLastVal.deviceId ? `?device_id=${gLastVal.deviceId}` : null;
 
   if (cmd === 'play') {
-    spotifyApi(gNowPlaying.isPlaying ? spotifyRoutes.playPause : spotifyRoutes.playPlay, arg);
+    spotifyApi(gState=='play' ? spotifyRoutes.playPause : spotifyRoutes.playPlay, arg);
     // TODO: this can cause bounce if we get an update before it actually gets set
     //gNowPlaying.isPlaying = !gNowPlaying.isPlaying;
   } else if (cmd === 'next') {
@@ -254,9 +264,28 @@ function timerUpdates() {
   }
 }
 
+function activateClock(){
+	updateClock();
+	selectScreen('clockScreen');
+	var elem = document.getElementById('clockContent');
+	elem.innerHTML='Clock screen';
+}
+
+function activatePlay(){
+	selectScreen('playingScreen');
+}
+
+function activateSleep(){
+	selectScreen('sleepScreen');
+}
+
+function activateScan(){
+  selectScreen('scanningScreen');
+}
+
 async function updateServer() {
   // if we're sleeping, poll on shouldwake until we're not
-  if (gNowPlaying.isSleeping) {
+  if (gState=='sleep') {
     var res = await getLocal('shouldwake');
     if (res.error) {
       handleError(res);
@@ -264,12 +293,24 @@ async function updateServer() {
     } else if (!res.data) {  // still sleeping
       return;
     } else {
-      gNowPlaying.isSleeping = false;
       gNowPlaying.lastPlayingTime = Date.now();
+      setState('wait');
       // fall through
     }
   }
 
+  updateAmp();
+
+  if (ampStatus.power=='OFF'){
+	  setState('wait');
+	  return;
+  }
+  
+  if (ampStatus.streamType!='2'){
+	  setState('scan');
+	  return;
+  }
+  
   var curToken = gAccessToken;
   var res = await getLocal('accessToken');
   if (res.error)
@@ -278,21 +319,21 @@ async function updateServer() {
     gAccessToken = res.data.token;
   if (curToken == null && gAccessToken != null) {  // switch away from error condition
     res = await getInitialPlaybackState();
-    if (!res.error)
-      if(gNowScanning)
-        selectScreen('scanningScreen');
-      else
-        selectScreen('playingScreen');
+    if (!res.error){
+      //setState('play');
+    }
   }
 
   handleError(res);
-
+  
 }
 
 async function updatePlayback() {
+  if(gState!='play')
+    return;
   var res;
 
-  if (!gAccessToken || gNowPlaying.isSleeping)
+  if (!gAccessToken || gState=='sleep' || gState=='wait')
     return;
 
   if (gCurScreen !== 'playingScreen')
@@ -300,22 +341,15 @@ async function updatePlayback() {
   else
     res = await getPlaybackState();
 
-  if (!res.error && !gNowPlaying.isSleeping && Config.sleepMinutes) {
+  if (!res.error && (gState!='sleep') && Config.sleepMinutes) {
     var now = Date.now();
     if (gNowPlaying.isIdle && gNowPlaying.lastPlayingTime && now - gNowPlaying.lastPlayingTime > (Config.sleepMinutes * 60 * 1000)) {
-      gNowPlaying.isSleeping = true;
-      selectScreen('sleepScreen');
+      setState('sleep');
       return;
     }
   }
 
-  if (!res.error) {
-	  if (gNowScanning)
-        selectScreen('scanningScreen');
-	  else
-        selectScreen('playingScreen');
-    }
-  else
+  if (res.error)
     handleError(res);
 }
 
@@ -330,7 +364,7 @@ async function getInitialPlaybackState() {
       return res;
     gNowPlaying = res.data;
     gNowPlaying.isIdle = true;
-    gNowPlaying.isPlaying = false;
+    //gNowPlaying.isPlaying = false;
 
     updatePlayingScreen(gNowPlaying);
   }
@@ -362,6 +396,10 @@ function updateClock() {
   }
 
   function timeStr(date) {
+    return "".concat(pad(date.getHours()), ':', pad(date.getMinutes()));
+  }
+
+  function timeStr_ampm(date) {
     var hr = date.getHours();
     var ampm;
 
@@ -384,7 +422,7 @@ function updateClock() {
 
   clock = document.getElementById('clock');
   if (clock)
-    clock.innerHTML = timeStr(now);
+    clock.innerHTML = timeStr_ampm(now);
 
   bigclock = document.getElementById('bigClockLogin');
   if (bigclock)
@@ -393,6 +431,9 @@ function updateClock() {
   if (bigclock)
     bigclock.innerHTML = timeStr(now);
   bigclock = document.getElementById('bigClockScanning');
+  if (bigclock)
+    bigclock.innerHTML = timeStr(now);
+  bigclock = document.getElementById('bigClockClock');
   if (bigclock)
     bigclock.innerHTML = timeStr(now);
 }
@@ -417,12 +458,24 @@ async function reinitialize() {
 }
 	
 async function updateScanning() {
-  if (!gNowScanning)
+  if (gState!='scan')
     return;
   if (Config.preferedPlayer===''){
-	  gNowScanning=false;
-	  reinitialize();
-	  selectScreen('scanningScreen');
+	  setState('play');
+	  return;
+  }
+  if(ampStatus.power=='OFF'){
+	  setState('wait');
+	  return;
+  }
+  
+  if(ampStatus.streamType!=2){
+	  debug('Amplifier input not set to Spotify, so we skip asking Spotify anything');
+	  scanMessageElement = document.getElementById('scanningContent');
+	  scanMessageElement.innerHTML = 'Spotify not active on amplifier';
+	  scanMessageElement = document.getElementById('scanningContent2');
+	  scanMessageElement.innerHTML = 'Amp input: '+ampStatus.sourceName;
+	  return;
   }
     
   var now = new Date();
@@ -436,8 +489,8 @@ async function updateScanning() {
   
   gLastVal.scanClock = now;
   
-  var scanMessage='scanning for the activation of device \"'+Config.preferedPlayer+'\"';
-  
+  var scanMessage='scanning server '+gCurrentServer+' for the activation of a device named \"'+Config.preferedPlayer+'\"';
+
   var res = await spotifyApi(spotifyRoutes.playbackState);
 
   if (res.error)
@@ -453,7 +506,7 @@ async function updateScanning() {
 		  debug('scan result positive: found server ('+gCurrentServer+') streaming to prefered device '+data.device.name);
 		  gNowScanning=false;	
 		  reinitialize();
-		  selectScreen('playingScreen');
+		  setState('play');
 	  } else
         debug('scan result negative: found server ('+gCurrentServer+') streaming to non-prefered device '+data.device.name);
     }
@@ -462,6 +515,28 @@ async function updateScanning() {
   scanMessageElement = document.getElementById('scanningContent');
   if (scanMessage)
     scanMessageElement.innerHTML = scanMessage;
+    
+  scanMessageElement = document.getElementById('scanningContent2');
+  scanMessageElement.innerHTML = 'Amp input: '+ampStatus.sourceName;
+    
+}
+	
+async function updateAmpScan() {
+  if(gState!='wait')
+    return;
+  var now = new Date();
+  if (now == gLastVal.scanClock)
+    return;
+  gLastVal.scanClock = now;
+
+  debug('checking amp status');
+  
+  updateAmp();
+
+  if(ampStatus.power=='ON'){
+	  debug('amp is on, switching to scanning for spotify');
+	  setState('scan');
+  }    
 }
 
 function showPlayControls(show) {
@@ -602,12 +677,17 @@ async function getPlaybackState() {
       if (Config.preferedPlayer!=='')
 		  if (Config.preferedPlayer!==data.device.name){
 			  // not prefered device, should now go back to scanning mode
-			  debug('current device not the prefered one, returning to scanning mode');
-			  gNowScanning=true;
-			  selectScreen('scanningScreen');
-			  return {data:null};;
+			  debug('current device not the prefered type, returning to scanning mode');
+			  setState('scan');
+			  return {data:null};
 		  }
     }
+    
+    if(ampStatus.streamType!='2'){
+		debug('amplifier is not streaming spotify, returning to scanning mode');		
+		setState('scan');// perhaps consider returning to 'wait' state
+		return {data:null};
+	}
 
     var track = data.item;
     if (!track) {
@@ -659,10 +739,6 @@ async function getPlaybackState() {
       updatePlayMeter(gNowPlaying);
     } else {
       updatePlayingScreen(gNowPlaying);
-	  if (gNowScanning)
-        selectScreen('scanningScreen');
-	  else
-        selectScreen('playingScreen');
     }
   }
 
@@ -843,3 +919,48 @@ async function getLocal(route)
   }
 }
 
+
+async function updateAmp()
+{
+  try {
+    var baseUri = Config.lyngdorfServer;
+    var res = await fetch(baseUri + '/status');
+    if ( res.status == 200 ) {
+      res = await res.json();
+      if (res.error)
+        return res;
+      ampStatus=res;
+      return;
+    }
+
+    return {error: `lyngdorf server returned error: ${res.status}`};
+  } catch(e) {
+    return {error: `lyngdorf server problem: ${e.message}`};
+  }
+}
+
+function setState(requestedState)
+{
+	if (gState==requestedState)
+	  return;
+	debug('Changing state to '+requestedState);  
+	switch(requestedState){
+		case 'wait':{
+			activateClock();
+		};break;
+		case 'scan':{
+			activateScan();
+		};break;
+		case 'play':{
+			activatePlay();
+		};break;
+		case 'sleep':{
+			activateSleep();
+		};break;
+		case 'error':{
+		};break;
+		case 'login':{
+		};break;
+	}
+	gState=requestedState;
+}
