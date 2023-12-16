@@ -14,9 +14,7 @@ const Querystring = require('querystring');
 const RequestLib = require('request');
 const OS = require('os');
 const FS = require('fs');
-
-
-var Config = require('./myconfig');
+const Config=require(process.argv.length>2?Path.join(__dirname,process.argv[2]):'./myconfig')
 
 // -- globals --
 
@@ -27,7 +25,7 @@ const gRedirectUriLocal = '/spotifyRedirect/';
 const gStateKey = 'spotify_auth_state';
 const gFileName = {
   homePage: 'index.html',
-  token: Path.join(__dirname, 'data/token.json')
+  token: Path.join(__dirname, 'data/token_'+ (typeof Config.port === 'undefined'?80:Config.port)+'.json')
 };
 
 var gTokenInfo = {};
@@ -169,11 +167,7 @@ function debug(msg) {
 }
 
 // start the server
-async function run() {
-	if (process.argv.length>2){
-		debug('startup argument detected ('+process.argv[2]+')');
-		Config = require(Path.join(__dirname,process.argv[2]));
-	}
+async function run() {	
   var server = createServer();
   setupRoutes(server);
   loadTokenInfo();
