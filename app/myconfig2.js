@@ -14,14 +14,14 @@ Config = {
 
   serverUrls: ['http://localhost:8000/','http://localhost:8001/'],  // how to connect to our server
   idleMinutes: 5,                  // idle time, in minutes, before we enter idle mode
-  sleepMinutes: 20,                // idle time, in minutes, before we enter sleep mode, or 0 to disable
+  sleepMinutes: 0,                // idle time, in minutes, before we enter sleep mode, or 0 to disable
 
   // -- options if device has touchscreen/keyboard --
 
   localLogin: false,          // show login button (TODO)
   showMouse: true,            // show the mouse cursor
-  showPlayerControls: true,  // show player controls
+  showPlayerControls: false,  // show player controls
 
-  preferedPlayer: 'iPad',  // set to '' to allow all players
+  preferedPlayer: 'TDAI-1120',  // set to '' to allow all players
   lyngdorfServer: 'http://localhost:8008',
 };

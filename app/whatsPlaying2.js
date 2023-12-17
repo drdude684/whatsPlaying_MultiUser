@@ -68,7 +68,7 @@ var gTimer = {
   },
   scanning: {
     callback: updateScanning,
-    interval: 5000,
+    interval: 1000,
     lastTic: 0,
   },
   ampscan: {
