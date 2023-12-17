@@ -19,9 +19,9 @@ Config = {
   // -- options if device has touchscreen/keyboard --
 
   localLogin: false,          // show login button (TODO)
-  showMouse: true,            // show the mouse cursor
+  showMouse: false,            // show the mouse cursor
   showPlayerControls: false,  // show player controls
 
-  preferedPlayer: 'TDAI-1120',  // set to '' to allow all players
-  lyngdorfServer: 'http://localhost:8008',
+  preferedPlayer: 'iPad',  // set to '' to allow all players
+  lyngdorfServer: '',
 };

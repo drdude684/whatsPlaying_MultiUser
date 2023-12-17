@@ -922,6 +922,12 @@ async function getLocal(route)
 
 async function updateAmp()
 {
+  if (Config.lyngdorfServer==''){
+    // return as if all is well
+    ampStatus.power='ON';
+    ampStatus.streamType='2';
+    return;
+  }
   try {
     var baseUri = Config.lyngdorfServer;
     var res = await fetch(baseUri + '/status');
