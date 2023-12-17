@@ -2,7 +2,9 @@
 <drdude684: I am trying to morph gregtbrown's sweet code into something 
 that supports my needs. Essentially, what I need is a display that shows 
 what is playing on a specific player, with multiple people having access 
-to that specific player)
+to that specific player>
+
+<This version starts as a clock screen which essentially waits for the associated player to be switched on. When it is switched on, we start looking for any associated spotify account to start playing to a device that has this particular device name. Since we can poll the player to ask whether spotify is active, we do not bother with the spotify queries unless that is the case. Once all conditions are satisfied, the playing screen is shown as per gregtbrown's methods>
 
 whatsPlaying is an app that displays "what's playing" on your Spotify account.
 
