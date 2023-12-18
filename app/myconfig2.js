@@ -22,6 +22,6 @@ Config = {
   showMouse: false,            // show the mouse cursor
   showPlayerControls: false,  // show player controls
 
-  preferedPlayer: 'iPad',  // set to '' to allow all players
-  lyngdorfServer: '',
+  preferedPlayer: 'TDAI-1120',  // set to '' to allow all players
+  lyngdorfServer: 'http://localhost:8008',
 };
