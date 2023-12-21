@@ -98,15 +98,25 @@
           font-size: 3.5vh;
       }
 
-      .bigclock {
-	height:70vh;
-	position: relative;
-	top: -10vh;
-          font-size: 70vh;
-          font-weight: lighter;          
-       	text-shadow: 0px 0px 20px white;
-	color: white;
+      .bigClock {
+			height:70vh;
+			position: relative;
+			top: -10vh;
+			font-size: 70vh;
+			font-weight: lighter;          
+			text-shadow: 0px 0px 20px white;
+			color: white;
       }
+
+      .errorClock {
+			height:70vh;
+			position: relative;
+			top: -10vh;
+			font-size: 70vh;
+			font-weight: lighter;          
+			text-shadow: 0px 0px 20px red;
+			color: red;
+	  }
 
       .logo {
           float: left;
@@ -133,7 +143,7 @@
       .errorContent {
           font-size: 4.56vh;
           color: red;
-      }
+      }      
 
       .scanningContent {
           font-size: 5vh;
@@ -144,7 +154,7 @@
           font-size: 4.56vh;
           color: white;
       }
-
+      
       .sleepTitle {
           font-size: 7.81vh;
           margin-bottom: .8em;
@@ -160,8 +170,8 @@
           /* gap: 1em; */
           justify-content: center;
           align-items: center;
-	height:82vh;
-        text-shadow: 5px 5px 10px black;
+          height:82vh;
+          text-shadow: 2px 2px 1px black;
       }
     
       .playingAlbumImage {
@@ -301,14 +311,14 @@
 
         <div id="loginScreen" class="screen screenOff">
            <div class="screenContent">
-			  <div id="bigClockLogin" class="bigclock"></div>
+			  <div id="bigClockLogin" class="bigClock"></div>
               <div id="loginContent" class="loginContent"></div>
            </div>
         </div>
 
         <div id="errorScreen" class="screen screenOff">
            <div class="screenContent">
-			  <div id="bigClockError" class="bigclock"></div>
+			  <div id="bigClockError" class="errorClock"></div>
               <div id="errorContent" class="errorContent"></div>
            </div>
         </div>
@@ -327,7 +337,7 @@
 
         <div id="scanningScreen" class="screen screenOff">
            <div class="screenContent">
-			  <div id="bigClockScanning" class="bigclock"></div>
+			  <div id="bigClockScanning" class="bigClock"></div>
               <div id="scanningContent" class="scanningContent"></div>
               <div id="scanningContent2" class="scanningContent"></div>
            </div>
@@ -335,7 +345,7 @@
 
         <div id="clockScreen" class="screen screenOff">
            <div class="screenContent">
-			  <div id=bigClockClock class="bigclock"></div>
+			  <div id=bigClockClock class="bigClock"></div>
               <div id="clockContent" class="clockContent"></div>
            </div>
         </div>

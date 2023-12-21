@@ -37,6 +37,7 @@ var gNowPlaying = {deviceId: 'unknown device'};
 var gLastVal = {playPerc: -1, deviceId: 'unknown device'};  // cache of previous values
 var gNowScanning = false;
 var gState = 'init';
+var gLastState = 'init';
 var gCurrentServer = 0;
 
 var gAccessToken;  // store this from last call, but null on error
@@ -132,7 +133,7 @@ async function initialize() {
   elem = document.getElementById('sleepContent');
   elem.innerHTML = `Wake me at<br><br>${gLoginUrl}`;
 
-  handleError(res);
+  setState('error',res);
   // initial update
   updateClock();
   await updateAmp();
@@ -219,9 +220,6 @@ function handleError(err) {
   } else {
     var elem = document.getElementById('errorContent');
     elem.innerHTML = err.error;
-    selectScreen('errorScreen');
-    gNowPlaying.errorTime = Date.now()
-    setState('error');
   }
 }
 
@@ -282,6 +280,12 @@ function activateSleep(){
 	selectScreen('sleepScreen');
 }
 
+function activateError(data){
+	selectScreen('errorScreen');
+	handleError(data);
+    gNowPlaying.errorTime = Date.now();
+}
+
 function activateScan(){
   selectScreen('scanningScreen');
 }
@@ -291,7 +295,7 @@ async function updateServer() {
   if (gState=='sleep') {
     var res = await getLocal('shouldwake');
     if (res.error) {
-      handleError(res);
+      setState('error',res);
       return;
     } else if (!res.data) {  // still sleeping
       return;
@@ -308,7 +312,7 @@ async function updateServer() {
   var res;
   res=await updateAmp();
   if(res.error){
-    handleError(res);
+    setState('error',res);
   }
 
   if (ampStatus.power=='OFF'){
@@ -334,7 +338,8 @@ async function updateServer() {
     }
   }
 
-  handleError(res);
+  if(res.error)
+    setState('error',res);
   
 }
 
@@ -360,7 +365,7 @@ async function updatePlayback() {
   }
 
   if (res.error)
-    handleError(res);
+    setState('error',res);
 }
 
 async function getInitialPlaybackState() {
@@ -434,22 +439,23 @@ function updateClock() {
   if (clock)
     clock.innerHTML = timeStr_ampm(now);
 
-  bigclock = document.getElementById('bigClockLogin');
-  if (bigclock)
-    bigclock.innerHTML = timeStr(now);
-  bigclock = document.getElementById('bigClockError');
-  if (bigclock)
-    bigclock.innerHTML = timeStr(now);
-  bigclock = document.getElementById('bigClockScanning');
-  if (bigclock)
-    bigclock.innerHTML = timeStr(now);
-  bigclock = document.getElementById('bigClockClock');
-  if (bigclock)
-    bigclock.innerHTML = timeStr(now);
+  bigClock = document.getElementById('bigClockLogin');
+  if (bigClock)
+    bigClock.innerHTML = timeStr(now);
+  bigClock = document.getElementById('bigClockError');
+  if (bigClock)
+    bigClock.innerHTML = timeStr(now);
+  bigClock = document.getElementById('bigClockScanning');
+  if (bigClock)
+    bigClock.innerHTML = timeStr(now);
+  bigClock = document.getElementById('bigClockClock');
+  if (bigClock)
+    bigClock.innerHTML = timeStr(now);
     
   if (gState=='error') {
     var now = Date.now();
     if (now - gNowPlaying.errorTime > (2 * 60 * 1000)) { // show error for 2 minutes, then return to main screen
+	  debug('error screen was shown for some time, now returning to our regular programming...');	
       setState('wait');
       return;
     }
@@ -470,7 +476,8 @@ async function reinitialize() {
   elem = document.getElementById('sleepContent');
   elem.innerHTML = `Wake me at<br><br>${gLoginUrl}`;
 
-  handleError(res);
+  if(res.error)
+    setState('error',res);
   // initial update
   updateClock();
   await updateServer();
@@ -554,7 +561,7 @@ async function updateAmpScan() {
   var res;
   res=await updateAmp();
   if (res.error){
-    handleError(res);
+    setState('error',res);
   }
   
   if(ampStatus.power=='ON'){
@@ -943,13 +950,11 @@ async function getLocal(route)
   }
 }
 
-var count=1;
-
 async function updateAmp()
 {
-	if (gState=='error')
-	  return;
-	  
+  if (gState=='error')
+    return;
+    
   if (Config.lyngdorfServer==''){
     // return as if all is well
     ampStatus.power='ON';
@@ -973,11 +978,12 @@ async function updateAmp()
   }
 }
 
-function setState(requestedState)
+function setState(requestedState, data)
 {
 	if (gState==requestedState)
 	  return;
 	debug('Changing state to '+requestedState);  
+	gPrevState=gState;
 	gState=requestedState;
 	switch(requestedState){
 		case 'wait':{
@@ -993,7 +999,15 @@ function setState(requestedState)
 			activateSleep();
 		};break;
 		case 'error':{
-			// expected to be called from handleError which already has taken care of everything;
+			if (!data)
+			data = {error: 'unknown'};			
+			if (!data.error) {
+				debug('error state requested, but no error apparent, returning to previous state');
+				gState=gPrevState;
+				return;
+			}
+			else				
+			activateError(data);			
 		};break;
 		case 'login':{
 			selectScreen('loginScreen');
