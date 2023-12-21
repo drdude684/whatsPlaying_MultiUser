@@ -135,7 +135,7 @@ async function initialize() {
   handleError(res);
   // initial update
   updateClock();
-  updateAmp();
+  await updateAmp();
   //await updateServer();
 
   setInterval(timerUpdates, 1000);
@@ -208,17 +208,20 @@ function uiCmd(cmd) {
 }
 
 function handleError(err) {
+		
   if (!err)
-    err = {error: 'unkown'};
+    err = {error: 'unknown'};
 
   if (!err.error) {
     return;
   } else if (err.error == 'login') {
-    selectScreen('loginScreen');
+    setState('login');
   } else {
     var elem = document.getElementById('errorContent');
     elem.innerHTML = err.error;
     selectScreen('errorScreen');
+    gNowPlaying.errorTime = Date.now()
+    setState('error');
   }
 }
 
@@ -298,8 +301,15 @@ async function updateServer() {
       // fall through
     }
   }
-
-  updateAmp();
+  
+  if (gState=='error')
+    return;
+  
+  var res;
+  res=await updateAmp();
+  if(res.error){
+    handleError(res);
+  }
 
   if (ampStatus.power=='OFF'){
 	  setState('wait');
@@ -436,6 +446,16 @@ function updateClock() {
   bigclock = document.getElementById('bigClockClock');
   if (bigclock)
     bigclock.innerHTML = timeStr(now);
+    
+  if (gState=='error') {
+    var now = Date.now();
+    if (now - gNowPlaying.errorTime > (2 * 60 * 1000)) { // show error for 2 minutes, then return to main screen
+      setState('wait');
+      return;
+    }
+   }
+    
+    
 }
 
 async function reinitialize() {
@@ -531,8 +551,12 @@ async function updateAmpScan() {
 
   debug('checking amp status');
   
-  updateAmp();
-
+  var res;
+  res=await updateAmp();
+  if (res.error){
+    handleError(res);
+  }
+  
   if(ampStatus.power=='ON'){
 	  debug('amp is on, switching to scanning for spotify');
 	  setState('scan');
@@ -919,9 +943,13 @@ async function getLocal(route)
   }
 }
 
+var count=1;
 
 async function updateAmp()
 {
+	if (gState=='error')
+	  return;
+	  
   if (Config.lyngdorfServer==''){
     // return as if all is well
     ampStatus.power='ON';
@@ -936,7 +964,7 @@ async function updateAmp()
       if (res.error)
         return res;
       ampStatus=res;
-      return;
+      return res;
     }
 
     return {error: `lyngdorf server returned error: ${res.status}`};
@@ -950,6 +978,7 @@ function setState(requestedState)
 	if (gState==requestedState)
 	  return;
 	debug('Changing state to '+requestedState);  
+	gState=requestedState;
 	switch(requestedState){
 		case 'wait':{
 			activateClock();
@@ -964,9 +993,10 @@ function setState(requestedState)
 			activateSleep();
 		};break;
 		case 'error':{
+			// expected to be called from handleError which already has taken care of everything;
 		};break;
 		case 'login':{
+			selectScreen('loginScreen');
 		};break;
 	}
-	gState=requestedState;
 }
