@@ -276,6 +276,10 @@ function activatePlay(){
 	selectScreen('playingScreen');
 }
 
+function activateTv(){
+	selectScreen('tvScreen');
+}
+
 function activateSleep(){
 	selectScreen('sleepScreen');
 }
@@ -320,7 +324,8 @@ async function updateServer() {
 	  return;
   }
   
-  if (ampStatus.streamType!='2'){
+  if ((ampStatus.sourceIndex!=4)&&(ampStatus.streamType!='2')){
+debug(328);
 	  setState('scan');
 	  return;
   }
@@ -451,6 +456,9 @@ function updateClock() {
   bigClock = document.getElementById('bigClockClock');
   if (bigClock)
     bigClock.innerHTML = timeStr(now);
+  bigClock = document.getElementById('bigTvClock');
+  if (bigClock)
+    bigClock.innerHTML = timeStr(now);
     
   if (gState=='error') {
     var now = Date.now();
@@ -493,6 +501,11 @@ async function updateScanning() {
   }
   if(ampStatus.power=='OFF'){
 	  setState('wait');
+	  return;
+  }
+  
+  if(ampStatus.sourceIndex==4){
+	  setState('tv');
 	  return;
   }
   
@@ -549,7 +562,7 @@ async function updateScanning() {
 }
 	
 async function updateAmpScan() {
-  if(gState!='wait')
+  if((gState!='wait')&&(gState!='tv'))
     return;
   var now = new Date();
   if (now == gLastVal.scanClock)
@@ -562,12 +575,20 @@ async function updateAmpScan() {
   res=await updateAmp();
   if (res.error){
     setState('error',res);
+    return;
   }
+  
+  if(gState=='tv') {
+	  if (ampStatus.sourceIndex!=4)
+		  setState('main');
+	  return;
+  } 
   
   if(ampStatus.power=='ON'){
 	  debug('amp is on, switching to scanning for spotify');
 	  setState('scan');
-  }    
+	  return;
+  }   
 }
 
 function showPlayControls(show) {
@@ -994,6 +1015,9 @@ function setState(requestedState, data)
 		};break;
 		case 'play':{
 			activatePlay();
+		};break;
+		case 'tv':{
+			activateTv();
 		};break;
 		case 'sleep':{
 			activateSleep();

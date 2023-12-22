@@ -14,13 +14,31 @@ const Gpio = require('onoff').Gpio;
 
 const Config = require('./myconfig');
 
-const controlSignal = new Gpio(3, 'in', 'rising', {debounceTimeout: 100});
+const controlSignal = (Config.shutdownOnControlSignal?new Gpio(3, 'in', 'rising', {debounceTimeout: 100}):null);
+
+if (Config.shutdownOnControlSignal) {
+  // GPIO stuff 
+  controlSignal.watch((err,value) => {
+  if(err) {
+    debug('error in control Signal handler');
+    throw (err);
+  }
+  if (controlSignal.readSync()) {
+    debug('control Signal handler was called, line still low');
+    if(Config.shutdownOnControlSignal)
+      shell.exec('sudo /usr/sbin/shutdown -h now');
+  } else {
+    debug('control Signal handler was called, line is now high');
+  }
+})
+
+}
 
 var shell = require('shelljs');
 var net = require('net');
 var client;
 
-var currentStatus={power:'UNKNOWN',volume:'UNKNOWN',sourceIndex:'-1',sourceName:'UNKNOWN',mute:'UNKNOWN',streamType:'UNKNOWN'};
+var currentStatus={power:'UNKNOWN',volume:'UNKNOWN',sourceIndex:'-1',sourceName:'UNKNOWN',mute:'UNKNOWN',streamType:'UNKNOWN',controlSignal:'UNKNOWN'};
 
 
 // -- globals --
@@ -35,21 +53,6 @@ process.on('unhandledRejection', (err) => {
   console.log(err);
   process.exit(1);
 });
-
-// GPIO stuff
-controlSignal.watch((err,value) => {
-  if(err) {
-    debug('error in control Signal handler');
-    throw (err);
-  }
-  if (controlSignal.readSync()) {
-    debug('control Signal handler was called, line still low');
-    if(Config.shutdownOnControlSignal)
-      shell.exec('sudo /usr/sbin/shutdown -h now');
-  } else {
-    debug('control Signal handler was called, line is now high');
-  }
-})
 
 process.on('SIGINT', _ => {
   debug('SIGINT received, releasing GPIO control');s
@@ -124,6 +127,8 @@ function debug(msg) {
 
 // start the server
 async function run() {
+  if(typeof Config.shutdownOnControlSignal === 'undefined')
+    Config.shutdownOnControlSignal=false;
   var server = createServer();
   setupRoutes(server);
   await server.register(require('@hapi/inert'));  // static file handling
@@ -220,7 +225,8 @@ function processResponse(resp){
 			  
 		}
 	}
-        currentStatus.controlSignal=controlSignal.readSync();
+	if (Config.shutdownOnControlSignal) 
+	  currentStatus.controlSignal=controlSignal.readSync();
 	debug(currentStatus);
 	return;
 }
