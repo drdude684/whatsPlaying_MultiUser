@@ -579,7 +579,7 @@ async function updateAmpScan() {
   
   if(gState=='tv') {
 	  if (ampStatus.sourceIndex!='4')
-		  setState('main');
+		  setState('scan');
 	  return;
   } 
   
