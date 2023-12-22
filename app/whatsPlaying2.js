@@ -324,8 +324,7 @@ async function updateServer() {
 	  return;
   }
   
-  if ((ampStatus.sourceIndex!=4)&&(ampStatus.streamType!='2')){
-debug(328);
+  if ((ampStatus.sourceIndex!='4')&&(ampStatus.streamType!='2')){
 	  setState('scan');
 	  return;
   }
@@ -504,7 +503,7 @@ async function updateScanning() {
 	  return;
   }
   
-  if(ampStatus.sourceIndex==4){
+  if(ampStatus.sourceIndex=='4'){
 	  setState('tv');
 	  return;
   }
@@ -579,7 +578,7 @@ async function updateAmpScan() {
   }
   
   if(gState=='tv') {
-	  if (ampStatus.sourceIndex!=4)
+	  if (ampStatus.sourceIndex!='4')
 		  setState('main');
 	  return;
   } 
