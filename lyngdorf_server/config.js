@@ -8,4 +8,4 @@ exports.debug = true;  // show debugging msgs
 exports.ip = "localhost";  // IP address to listen on, defaults to host name
 exports.port = 8008;  // port to listen on, defaults to 80
 exports.lyngdorfaddress = 'tdai1120.local' // IP address of lyngdorf device
-
+exports.shutdownOnControlSignal = true; // execute shutdown on falling flank on GPIO3

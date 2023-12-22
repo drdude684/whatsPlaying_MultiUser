@@ -10,9 +10,13 @@
 const Path = require('path');
 const Hapi = require('@hapi/hapi');
 const RequestLib = require('request');
+const Gpio = require('onoff').Gpio;
 
 const Config = require('./myconfig');
 
+const controlSignal = new Gpio(3, 'in', 'rising', {debounceTimeout: 100});
+
+var shell = require('shelljs');
 var net = require('net');
 var client;
 
@@ -32,6 +36,25 @@ process.on('unhandledRejection', (err) => {
   process.exit(1);
 });
 
+// GPIO stuff
+controlSignal.watch((err,value) => {
+  if(err) {
+    debug('error in control Signal handler');
+    throw (err);
+  }
+  if (controlSignal.readSync()) {
+    debug('control Signal handler was called, line still low');
+    if(Config.shutdownOnControlSignal)
+      shell.exec('sudo /usr/sbin/shutdown -h now');
+  } else {
+    debug('control Signal handler was called, line is now high');
+  }
+})
+
+process.on('SIGINT', _ => {
+  debug('SIGINT received, releasing GPIO control');s
+  controlSignal.unexport();
+})
 
 // create the server
 function createServer() {
@@ -197,6 +220,7 @@ function processResponse(resp){
 			  
 		}
 	}
+        currentStatus.controlSignal=controlSignal.readSync();
 	debug(currentStatus);
 	return;
 }
