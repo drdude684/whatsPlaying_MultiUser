@@ -1,0 +1,20 @@
+{
+  "name": "LyngdorfServer",
+  "version": "1.0.0",
+  "description": "Provide status info on Lyngdorf device",
+  "homepage": "",
+  "main": "lyngdorf_server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "author": "drdude684",
+  "license": "GPL-3.0",
+  "dependencies": {
+    "@hapi/hapi": "^21.1.0",
+    "@hapi/inert": "^7.0.0",
+    "request": "^2.88.2",
+    "onoff": "^6.0.3",
+    "shelljs": "^0.8.5"
+  }
+}
