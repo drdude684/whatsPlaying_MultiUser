@@ -40,7 +40,7 @@ var gState = 'init';
 var gLastState = 'init';
 const gStateTimerMap = new Map([
   ["wait",  new Map([["clock",1],["timeBar",0],["server",0],["playback",0],["scanning",0],["ampScan",1]])],
-  ["scan",  new Map([["clock",1],["timeBar",0],["server",0],["playback",0],["scanning",1],["ampScan",1]])],
+  ["scan",  new Map([["clock",1],["timeBar",0],["server",1],["playback",0],["scanning",1],["ampScan",1]])],
   ["play",  new Map([["clock",1],["timeBar",1],["server",1],["playback",1],["scanning",0],["ampScan",1]])],
   ["tv",    new Map([["clock",1],["timeBar",0],["server",0],["playback",0],["scanning",0],["ampScan",1]])],
   ["sleep", new Map([["clock",1],["timeBar",0],["server",0],["playback",0],["scanning",0],["ampScan",1]])],
@@ -148,12 +148,11 @@ async function initialize() {
 
   elem = document.getElementById('sleepContent');
   elem.innerHTML = `Wake me at<br><br>${gLoginUrl}`;
-
-  setState('error',res);
+  
   // initial update
   updateClock();
   await updateAmp();
-  //await updateServer();
+  await updateServer();
 
   setInterval(timerUpdates, 1000);
   
@@ -225,7 +224,8 @@ function uiCmd(cmd) {
 }
 
 function handleError(err) {
-		
+  debug('handling error');
+  debug(err);		
   if (!err)
     err = {error: 'unknown'};
 
@@ -282,7 +282,7 @@ function activateClock(){
 	updateClock();
 	selectScreen('clockScreen');
 	var elem = document.getElementById('clockContent');
-	elem.innerHTML='Clock screen';
+	elem.innerHTML='';
 }
 
 function activatePlay(){
@@ -304,6 +304,7 @@ function activateError(data){
 }
 
 function activateScan(){
+  getPlaybackState();
   selectScreen('scanningScreen');
 }
 
@@ -322,23 +323,7 @@ async function updateServer() {
       // fall through
     }
   }
-  
-  var res;
-  res=await updateAmp();
-  if(res.error){
-    setState('error',res);
-  }
-
-  if (ampStatus.power=='OFF'){
-	  setState('wait');
-	  return;
-  }
-  
-  if ((ampStatus.sourceIndex!='4')&&(ampStatus.streamType!='2')){
-	  setState('scan');
-	  return;
-  }
-  
+ 
   var curToken = gAccessToken;
   var res = await getLocal('accessToken');
   if (res.error)
@@ -352,8 +337,28 @@ async function updateServer() {
     }
   }
 
-  if(res.error)
+  if(res.error) {
     setState('error',res);
+    return;
+  }
+  
+  /*
+  res=await updateAmp();
+  if(res.error){
+    setState('error',res);
+    return;
+  }
+
+  if (ampStatus.power=='OFF'){
+	  setState('wait');
+	  return;
+  }
+  
+  if ((ampStatus.sourceIndex!='4')&&(ampStatus.streamType!='2')){
+	  setState('scan');
+	  return;
+  }
+  */
   
 }
 
@@ -376,8 +381,10 @@ async function updatePlayback() {
     }
   }
 
-  if (res.error)
+  if (res.error) {
     setState('error',res);
+    return;
+  }
 }
 
 async function getInitialPlaybackState() {
@@ -386,6 +393,8 @@ async function getInitialPlaybackState() {
   if (res.error)
     return res;
   if (!gNowPlaying.id) {  // nothing playing, show most recent
+debug('nothing playing yet, fetching most recent');
+debug(gNowPlaying);
     res = await getRecentlyPlayed();
     if (res.error)
       return res;
@@ -491,8 +500,10 @@ async function reinitialize() {
   elem = document.getElementById('sleepContent');
   elem.innerHTML = `Wake me at<br><br>${gLoginUrl}`;
 
-  if(res.error)
+  if(res.error) {
     setState('error',res);
+    return;
+  }
   // initial update
   updateClock();
   await updateServer();
@@ -504,8 +515,7 @@ async function updateScanning() {
 	  setState('play');
 	  return;
   }
-  
-  if(ampStatus.streamType!=2){
+  if(ampStatus.sourceIndex!='8'){
 	  debug('Amplifier input not set to Spotify, so we skip asking Spotify anything');
 	  scanMessageElement = document.getElementById('scanningContent');
 	  scanMessageElement.innerHTML = 'Spotify not active on amplifier';
@@ -517,7 +527,6 @@ async function updateScanning() {
   var now = new Date();
   if (now == gLastVal.scanClock)
     return;
-
   gCurrentServer=gCurrentServer+1;
   if (gCurrentServer>Config.serverUrls.length-1)
     gCurrentServer=0;
@@ -528,10 +537,10 @@ async function updateScanning() {
   var scanMessage='scanning server '+gCurrentServer+' for the activation of a device named \"'+Config.preferedPlayer+'\"';
 
   var res = await spotifyApi(spotifyRoutes.playbackState);
-
-  if (res.error)
-    return res;
-
+  if (res.error) {
+	setState('error',res);
+    return;
+  }
   var data = res.data;
 
   if ( data == null ) {
@@ -547,7 +556,6 @@ async function updateScanning() {
         debug('scan result negative: found server ('+gCurrentServer+') streaming to non-prefered device '+data.device.name);
     }
   }
-    
   scanMessageElement = document.getElementById('scanningContent');
   if (scanMessage)
     scanMessageElement.innerHTML = scanMessage;
@@ -572,28 +580,27 @@ async function updateAmpScan() {
     return;
   }
   
-  if(gState=='tv') {
-	  if (ampStatus.sourceIndex!='4') {
-		  setState('scan');
-	      return;
-	  }
-  } else  {
-	  if (ampStatus.sourceIndex=='4') {
+  if(ampStatus.power=='OFF'){
+	  setState('wait');
+	  return;
+  }
+
+  if ((ampStatus.sourceIndex=='4')&&(gState!='tv')) {
 		  setState('tv');
 		  return;
 	  }
-  } 
-  
+	  
+  if ((ampStatus.sourceIndex!='4')&&(gState=='tv')) {
+		  setState('scan');
+		  return;
+	  }
+	  
   if((ampStatus.power=='ON')&&(gState=="wait")){
 	  debug('amp is on, switching to scanning for spotify');
 	  setState('scan');
 	  return;
   }   
-
-  if(ampStatus.power=='OFF'){
-	  setState('wait');
-	  return;
-  }
+  
 }
 
 function showPlayControls(show) {
@@ -740,7 +747,8 @@ async function getPlaybackState() {
 		  }
     }
     
-    if((ampStatus.streamType!='2')||(ampStatus.sourceIndex!='8')){
+    //if((ampStatus.streamType!='2')||(ampStatus.sourceIndex!='8')){
+    if(ampStatus.sourceIndex!='8'){
 		debug('amplifier is not streaming spotify, returning to scanning mode');		
 		setState('scan');// perhaps consider returning to 'wait' state
 		return {data:null};

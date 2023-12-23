@@ -26,8 +26,9 @@
       html, body {
           width: 100%;
           height: 100%;
+          /* width: 1600px;
+          height: 600px;*/
           overflow: hidden;
-          /* background-color: black;*/
           background-image: linear-gradient(black, teal);
           cursor: none;
       }
@@ -61,11 +62,10 @@
 
       .screenOn {
           display: block;
-          /* -webkit-animation: fadeIn 1.0s; */
-          /* animation: fadeIn 1.0s; */
-          width: 100vw;
-          height: 92vh;
-           padding: 2vh 3vw 2vh 3vw;
+          /* -webkit-animation: fadeIn 1.0s;
+          animation: fadeIn 1.0s; */
+           width: 100%;
+           height: 92%;
       }
 
       .screenOff {
@@ -75,128 +75,144 @@
       .container {
           display: flex;
           flex-direction: column;
-          justify-content: space-around;
-          align-items: center;
+          justify-content: space-between;
+          width: 100%;
+          height: 100%;
+          container-type: size;
       }
 
       .titleBar {
-          height: 8vh;
-          font-size: 4vh;
+          height: 8cqh;
+          width: 100%;
+          font-size: 3.5cqh;
+          display: flex;
+          flex-direction: row;
+          justify-content: space-between;
+          align-items: center;
+          padding: 0.5cqh 0.5cqh;
       }
 
       .title {
-          padding-top: .8em;
-          font-size: 3.5vh;
+          flex-grow: 10;
+          text-align: center;
       }
 
       .clock {
           float: right;
-          position: absolute;
-          top: 0;
-          right: 0;
-          padding: 0.8em;
-          font-size: 3.5vh;
       }
 
       .bigClock {
-			height:70vh;
-			position: relative;
-			top: -10vh;
-			font-size: 70vh;
+			height: 72cqh;
+			width: 100%;
+			position: static;
+			font-size: 70cqh;
 			font-weight: lighter;          
 			text-shadow: 0px 0px 20px white;
 			color: white;
+			line-height: 120%;
       }
 
       .errorClock {
-			height:70vh;
-			position: relative;
-			top: -10vh;
-			font-size: 70vh;
+			height: 72cqh;
+			width: 100%;
+			position: static;
+			font-size: 70cqh;
 			font-weight: lighter;          
 			text-shadow: 0px 0px 20px red;
 			color: red;
+			line-height: 120%;
 	  }
 
       .logo {
+          display: inline-block;
           float: left;
-          position: absolute;
-          top: 0;
-          left: 0;
-          margin: 0.8em;
-          height: 4.56vh;
+          height: 80%;
       }
 
       .tvlogo {
           float: right;
           position: absolute;
-          top: 25vh;
+          top: 30cqh;
           right: 0;
           margin: 0.8em;
-          height: 50vh;
+          height: 40cqh;
+          -webkit-animation: fadeIn 2.0s;
+          animation: fadeIn 2.0s;
       }
 
       .screenContent {
           display: flex;
           flex-direction: column;
           height: 100%;
-          justify-content: center;
+          justify-content: space-between;
           text-align: center;
       }
 
       .loginContent {
-          font-size: 4.56vh;
+		  height: 16cqh;
+          font-size: 4vb;
+          line-height: 120%;
           color: green;
       }
 
       .errorContent {
-          font-size: 4.56vh;
+		  height: 16cqh;
+          font-size: 4vb;
+          line-height: 120%;
           color: red;
       }      
 
       .scanningContent {
-          font-size: 5vh;
+		  height: 8cqh;
+          font-size: 4vb;
+          line-height: 120%;
           color: gold;
       }
 
       .tvContent {
-          font-size: 5vh;
+		  height: 16cqh;
+          font-size: 4vb;
+          line-height: 120%;
           color: blue;
       }
 
       .clockContent {
-          font-size: 4.56vh;
+		  height: 16cqh;
+          font-size: 4vb;
+          line-height: 120%;
           color: white;
       }
       
       .sleepTitle {
-          font-size: 7.81vh;
-          margin-bottom: .8em;
+		  font-size: 3.5cqh;          
       }
 
       .sleepContent {
-          font-size: 3.26vh;
+		  font-size: 3.5cqh;          
       }
 
       .playingContent {
           display: flex;
           flex-direction: row;
           /* gap: 1em; */
+          padding: 2cqh 5cqh;
           justify-content: center;
           align-items: center;
-          height:82vh;
+          height: 84cqh;
           text-shadow: 2px 2px 1px black;
+          -webkit-animation: fadeIn 2.0s;
+          animation: fadeIn 2.0s;
       }
     
       .playingAlbumImage {
           flex: 1 1 50%;
           opacity: 0; /* hide until there is an image but retain screen space */
-          min-width: 25vh;
+          min-width: 21cqh;
           /* max-width: 80vh; */
-          max-width: 75vh;
-          min-height: 25vh;
+          max-width: 80cqh;
+          min-height: 21cqh;
           /* max-height: 80vh; */
-          max-height: 75vh;
+          max-height: 80cqh;
           border: 0.13vh solid #777;
           box-shadow: 0.52vh 0.52vh 1.30vh -0.26vh rgb(255 255 255 / 50%);
       }
@@ -208,57 +224,57 @@
           margin-left: 2em;
           justify-content: center;
           flex: 1 1 50%;
-          font-size: 3.26vh;
+          font-size: 5cqh;
           font-weight: normal;
           text-align: center;
       }
 
       .playingItem {
-          margin: 0.3em;
-          /* transition: 0.25s ease-in-out; */
+          margin: 2cqh;
+          transition: 0.25s ease-in-out;
       }
 
       .playingTrack {
           /* font-size: 4.56vh; */
-		font-size: 12vh;
+		font-size: 14cqh;
 		font-weight: bolder;
-		height: 30vh;
+		height: 35cqh;
 		overflow: scroll;
       }
 
       .playingAlbum {
-		font-size:8vh;
-		height: 10vh;
-                overflow:scroll;
+		font-size:8cqh;
+		height: 10cqh;
+		overflow:scroll;
       }
 
       .playingArtist {
-		font-size: 10vh;
+		font-size: 10cqh;
 		font-weight: normal;
-		height: 12vh;
+		height: 12cqh;
 		overflow: scroll;
       }
 
       .playingDate {
-          font-size: 1.95vh;
+          font-size: 2cqh;
       }
 
       .playingPlaylist {
-          position: absolute;
+		  height: 4cqh;
+          /*position: absolute;
           bottom: 0;
-          margin: 0 0 1em 0;
-          font-size: 3.26vh;
+          margin: 0 0 1em 0;*/
+          font-size: 4cqh;
+          padding: 0 5cqh;
       }
 
       .playingMeter {
-          opacity: 0; /* hide until we're playing but retain screen space */
-          /* height: 1.30vh; */
-          height: 4vh;
-          width: 100%;
-          /* margin-top: 4em; */
-		margin-top: 5vh;
+          opacity: 0; /* hide until we're playing but retain screen space */          
+          height: 4cqh;
+          width: 100%;          
+		  margin-top: 5cqh;
           background: black;
-          border: 0.13vh solid #333;
+          border: 0.13cqh solid #333;
           border-radius: 0.65vh;
       }
 
@@ -267,27 +283,27 @@
           height: 100%;
           /* background: #777; */
           background: teal;
-          border: 0.13vh solid #444;
-          border-radius: 0.52vh;
+          border: 0.13cqh solid #444;
+          border-radius: 0.52cqh;
       }
 
       .playingControls {
           display: none; /* hidden until we need it */
           width: 14em;
-          margin-top: 5vh;
+          margin-top: 5cqh;
           padding: 0.5em;
-          border: 0.26vh solid #333;
-          border-radius: 1em;
+          border: 0.26cqh solid #333;
+          /*border-radius: 1em;*/
       }
 
       .playingControl {
           display: inline-block;
-          margin: 0 1em 0 1em;
+          margin: 0 1cqh 0 1cqh;
       }
 
       .playingControl svg {
-          width: 2em;
-          height: 2em;
+          width: 2cqh;
+          height: 2cqh;
           fill: white;
       }
 
@@ -318,9 +334,9 @@
 
     <div class="container">
         <div class="titleBar">
-           <div class="title">whatsPlaying (development version) </div>
-           <div id=clock class="clock"></div>
            <img id="logo" class="logo" src="Spotify_Logo_RGB_White.png"></img>
+           <div class="title">whatsPlaying (development version)</div>
+           <div id="clock" class="clock"></div>
         </div>
 
         <div id="loginScreen" class="screen screenOff">
@@ -360,14 +376,14 @@
         <div id="tvScreen" class="screen screenOff">
            <div class="screenContent">
 			  <div id="bigTvClock" class="bigClock"></div>
-              <div id="tvContent" class="tvContent"></div> 
+              <div id="tvContent" class="tvContent">TV</div> 
               <img id="tvlogo" class="tvlogo" src="television-icon-white.png"></img>
            </div>
         </div>
 
         <div id="clockScreen" class="screen screenOff">
            <div class="screenContent">
-			  <div id=bigClockClock class="bigClock"></div>
+			  <div id="bigClockClock" class="bigClock"></div>
               <div id="clockContent" class="clockContent"></div>
            </div>
         </div>
