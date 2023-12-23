@@ -12,6 +12,20 @@ const Hapi = require('@hapi/hapi');
 const RequestLib = require('request');
 const Gpio = require('onoff').Gpio;
 
+var readline = require('readline');
+
+var lastkeyname=' ';
+
+process.stdin.on('keypress', (chunk, key) => {
+	if (key) {
+		//debug('key: '+key.name);
+		lastkeyname=key.name;
+		switch (key.name) {
+			case 'q': process.exit();break;
+		}
+	}
+});
+
 const Config = require('./myconfig');
 
 const controlSignal = (Config.shutdownOnControlSignal?new Gpio(3, 'in', 'rising', {debounceTimeout: 100}):null);
@@ -129,6 +143,13 @@ function debug(msg) {
 async function run() {
   if(typeof Config.shutdownOnControlSignal === 'undefined')
     Config.shutdownOnControlSignal=false;
+    
+	readline.emitKeypressEvents(process.stdin);
+
+	if (process.stdin.isTTY)
+		process.stdin.setRawMode(true);
+
+    
   var server = createServer();
   setupRoutes(server);
   await server.register(require('@hapi/inert'));  // static file handling
@@ -224,6 +245,13 @@ function processResponse(resp){
 			  }
 			  
 		}
+	}
+	switch(lastkeyname) {
+		// keyboard input on the terminal can be used to fake some signals. Nice for debugging.
+		case 'o': currentStatus.power='ON';break;
+		case 'p': currentStatus.power='OFF';break;
+		case '4': currentStatus.sourceName='TV';currentStatus.sourceIndex='4';break;
+		case '8': currentStatus.sourceName='Spotify';currentStatus.sourceIndex='8';break;
 	}
 	if (Config.shutdownOnControlSignal) 
 	  currentStatus.controlSignal=controlSignal.readSync();
