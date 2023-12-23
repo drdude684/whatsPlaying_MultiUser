@@ -38,6 +38,16 @@ var gLastVal = {playPerc: -1, deviceId: 'unknown device'};  // cache of previous
 var gNowScanning = false;
 var gState = 'init';
 var gLastState = 'init';
+const gStateTimerMap = new Map([
+  ["wait",  new Map([["clock",1],["timeBar",0],["server",0],["playback",0],["scanning",0],["ampScan",1]])],
+  ["scan",  new Map([["clock",1],["timeBar",0],["server",0],["playback",0],["scanning",1],["ampScan",1]])],
+  ["play",  new Map([["clock",1],["timeBar",1],["server",1],["playback",1],["scanning",0],["ampScan",1]])],
+  ["tv",    new Map([["clock",1],["timeBar",0],["server",0],["playback",0],["scanning",0],["ampScan",1]])],
+  ["sleep", new Map([["clock",1],["timeBar",0],["server",0],["playback",0],["scanning",0],["ampScan",1]])],
+  ["error", new Map([["clock",1],["timeBar",0],["server",0],["playback",0],["scanning",0],["ampScan",1]])],
+  ["login", new Map([["clock",1],["timeBar",0],["server",0],["playback",0],["scanning",0],["ampScan",1]])],
+]);
+var gTimerMap=gStateTimerMap.get("wait");
 var gCurrentServer = 0;
 
 var gAccessToken;  // store this from last call, but null on error
@@ -48,31 +58,37 @@ var ampStatus = {power:'Undefined',volume:'undefined',sourceIndex:'Unknown',sour
 // run single setInterval timer and handle our own timers manually in that
 var gTimer = {
   clock: {
+    label: "clock",
     callback: updateClock,
     interval: 500,
     lastTic: 0
   },
   timeBar: {
+    label: "timeBar",
     callback: updatePayerUi,
     interval: 500,
     lastTic: 0
   },
   server: {
+    label: "server",
    callback: updateServer,
    interval: 3000,
    lastTic: 0,
   },
   playback: {
+    label: "playback",
     callback: updatePlayback,
     interval: 3000,
     lastTic: 0,
   },
   scanning: {
+    label: "scanning",
     callback: updateScanning,
     interval: 1000,
     lastTic: 0,
   },
   ampscan: {
+    label: "ampScan",
     callback: updateAmpScan,
     interval: 2000,
     lastTic: 0,
@@ -248,19 +264,16 @@ function selectScreen(name) {
   }
 }
 
-function setTimer(name, interval) {
-  gTimer[name].interval = interval;
-}
-
 function timerUpdates() {
   var now = Date.now();
-
   for (t in gTimer) {
     var timer = gTimer[t];
-    if (now >= timer.lastTic + timer.interval) {
-      timer.count = timer.count + 1;
-      timer.callback();
-      timer.lastTic = now;
+    if (gStateTimerMap.get(gState).get(timer.label)){
+		if (now >= timer.lastTic + timer.interval) {
+		  timer.count = timer.count + 1;
+		  timer.callback();
+		  timer.lastTic = now;
+	  }
     }
   }
 }
@@ -310,9 +323,6 @@ async function updateServer() {
     }
   }
   
-  if (gState=='error')
-    return;
-  
   var res;
   res=await updateAmp();
   if(res.error){
@@ -348,8 +358,6 @@ async function updateServer() {
 }
 
 async function updatePlayback() {
-  if(gState!='play')
-    return;
   var res;
 
   if (!gAccessToken || gState=='sleep' || gState=='wait')
@@ -492,19 +500,8 @@ async function reinitialize() {
 }
 	
 async function updateScanning() {
-  if (gState!='scan')
-    return;
   if (Config.preferedPlayer===''){
 	  setState('play');
-	  return;
-  }
-  if(ampStatus.power=='OFF'){
-	  setState('wait');
-	  return;
-  }
-  
-  if(ampStatus.sourceIndex=='4'){
-	  setState('tv');
 	  return;
   }
   
@@ -561,8 +558,6 @@ async function updateScanning() {
 }
 	
 async function updateAmpScan() {
-  if((gState!='wait')&&(gState!='tv'))
-    return;
   var now = new Date();
   if (now == gLastVal.scanClock)
     return;
@@ -578,16 +573,27 @@ async function updateAmpScan() {
   }
   
   if(gState=='tv') {
-	  if (ampStatus.sourceIndex!='4')
+	  if (ampStatus.sourceIndex!='4') {
 		  setState('scan');
-	  return;
+	      return;
+	  }
+  } else  {
+	  if (ampStatus.sourceIndex=='4') {
+		  setState('tv');
+		  return;
+	  }
   } 
   
-  if(ampStatus.power=='ON'){
+  if((ampStatus.power=='ON')&&(gState=="wait")){
 	  debug('amp is on, switching to scanning for spotify');
 	  setState('scan');
 	  return;
   }   
+
+  if(ampStatus.power=='OFF'){
+	  setState('wait');
+	  return;
+  }
 }
 
 function showPlayControls(show) {
@@ -734,7 +740,7 @@ async function getPlaybackState() {
 		  }
     }
     
-    if(ampStatus.streamType!='2'){
+    if((ampStatus.streamType!='2')||(ampStatus.sourceIndex!='8')){
 		debug('amplifier is not streaming spotify, returning to scanning mode');		
 		setState('scan');// perhaps consider returning to 'wait' state
 		return {data:null};
@@ -972,9 +978,6 @@ async function getLocal(route)
 
 async function updateAmp()
 {
-  if (gState=='error')
-    return;
-    
   if (Config.lyngdorfServer==''){
     // return as if all is well
     ampStatus.power='ON';
