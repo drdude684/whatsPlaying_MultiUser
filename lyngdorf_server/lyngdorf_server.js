@@ -54,6 +54,7 @@ var client;
 
 var currentStatus={power:'UNKNOWN',volume:'UNKNOWN',sourceIndex:'-1',sourceName:'UNKNOWN',mute:'UNKNOWN',streamType:'UNKNOWN',controlSignal:'UNKNOWN'};
 
+var demoLoopIndex=0;
 
 // -- globals --
 
@@ -141,6 +142,7 @@ function debug(msg) {
 
 // start the server
 async function run() {
+  debug('starting lyngdorf_server, press \'q\' to exit');
   if(typeof Config.shutdownOnControlSignal === 'undefined')
     Config.shutdownOnControlSignal=false;
     
@@ -155,18 +157,30 @@ async function run() {
   await server.register(require('@hapi/inert'));  // static file handling
   await server.start();
   debug(`Server running at: ${server.info.uri}`);
-  client = new net.Socket();
-  client.connect(84, Config.lyngdorfaddress, function() {
-  console.log('Lyngdorf device Connected');
-  client.write('!VERB(0)?\n');
-  });
-	client.on('data', function(data) {
-	processResponse(Buffer.from(data).toString());
-	});
-	client.on('close', function() {
-	console.log('Connection closed');
-	});  
-	getStatus();
+  if (Config.demoMode) {
+	  demoUpdate();
+	setInterval(demoUpdate,Config.demoCycleTime * 1000);
+  } else {
+	  client = new net.Socket();
+	  client.connect(84, Config.lyngdorfaddress, function() {
+	  console.log('Lyngdorf device Connected');
+	  client.write('!VERB(0)?\n');
+	  });
+		client.on('data', function(data) {
+		processResponse(Buffer.from(data).toString());
+		});
+		client.on('close', function() {
+		console.log('Connection closed');
+		});  
+		getStatus();
+	}
+  if (controlSignal)
+	  if (controlSignal.readSync()) {
+		debug('control Signal line still low');
+	  } else {
+		debug('control Signal line is high');
+	  }
+
 };
 
 // wrapper for post/fetch
@@ -263,16 +277,32 @@ function getStatus(req, h) {
 	// we send some status word requests to the Lyngdorf device.
 	// note that most likely the responses will not yet be in when this function returns.
   	
-  debug('get status requested');
-  client.write('!PWR?\n');
-  client.write('!VOL?\n');
-  client.write('!SRC?\n');
-  client.write('!SRCNAME?\n');
-  client.write('!MUTE?\n');
-  client.write('!STREAMTYPE?\n');
+  if (Config.demoMode)
+    debug('get status requested (demo mode)');
+  else {
+	  debug('get status requested');
+      client.write('!PWR?\n');
+	  client.write('!VOL?\n');
+	  client.write('!SRC?\n');
+	  client.write('!SRCNAME?\n');
+	  client.write('!MUTE?\n');
+	  client.write('!STREAMTYPE?\n');
+  }
   
   return currentStatus;
   
 }
 
+function demoUpdate() {
+	switch (demoLoopIndex++){
+		case 0: debug('demo mode, changing state: power on');currentStatus.power='ON'; currentStatus.sourceIndex=1;currentStatus.sourceName='1';break;
+		case 1: debug('demo mode, changing state: input Spotify');currentStatus.sourceIndex=8;currentStatus.sourceName='Spotify';currentStatus.streamType='Spotify';break;
+		case 2: debug('demo mode, changing state: input TV');currentStatus.sourceIndex=4;currentStatus.sourceName='TV';break
+		case 3: debug('demo mode, changing state: power off');currentStatus.power='OFF'; currentStatus.sourceIndex=1; currentStatus.sourceName='1';break;
+	}
+  debug(currentStatus);
+  if(demoLoopIndex>3)
+    demoLoopIndex=0;
+}
+	
 run();

@@ -22,7 +22,8 @@ Config = {
   showMouse: true,            // show the mouse cursor
   showPlayerControls: false,  // show player controls
 
-  //preferedPlayer: 'TDAI-1120',  // set to '' to allow all players
-  preferedPlayer: 'iPad',  // set to '' to allow all players
+  preferedPlayer: 'TDAI-1120',  // set to '' to allow all players
+  //preferedPlayer: 'iPad',  // set to '' to allow all players
   lyngdorfServer: 'http://localhost:8008',
+  errorTimeout: 2, // how many seconds should the error screen be shown
 };

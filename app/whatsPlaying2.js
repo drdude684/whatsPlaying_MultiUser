@@ -112,7 +112,10 @@ async function initialize() {
 
   if (!Config.idleMinutes)
     Config.idleMinutes = 5;
-    
+  
+  if(!Config.errorTimeout)
+    Config.errorTimeOut=60;
+      
   // trap our hotkeys
   window.addEventListener("keydown", function(event)
   {
@@ -478,7 +481,7 @@ function updateClock() {
     
   if (gState=='error') {
     var now = Date.now();
-    if (now - gNowPlaying.errorTime > (2 * 60 * 1000)) { // show error for 2 minutes, then return to main screen
+    if (now - gNowPlaying.errorTime > (Config.errorTimeout * 1000)) { // show error for 2 minutes, then return to main screen
 	  debug('error screen was shown for some time, now returning to our regular programming...');	
       setState('wait');
       return;
