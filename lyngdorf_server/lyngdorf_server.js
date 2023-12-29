@@ -269,7 +269,7 @@ function processResponse(resp){
 	}
 	if (Config.shutdownOnControlSignal) 
 	  currentStatus.controlSignal=controlSignal.readSync();
-	debug(currentStatus);
+	//debug(currentStatus);
 	return;
 }
 
@@ -277,10 +277,10 @@ function getStatus(req, h) {
 	// we send some status word requests to the Lyngdorf device.
 	// note that most likely the responses will not yet be in when this function returns.
   	
-  if (Config.demoMode)
-    debug('get status requested (demo mode)');
-  else {
-	  debug('get status requested');
+  if (Config.demoMode){
+    //debug('get status requested (demo mode)');
+  }  else {
+	  //debug('get status requested');
       client.write('!PWR?\n');
 	  client.write('!VOL?\n');
 	  client.write('!SRC?\n');

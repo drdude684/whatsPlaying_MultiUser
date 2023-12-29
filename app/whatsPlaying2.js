@@ -337,6 +337,7 @@ async function updateServer() {
     res = await getInitialPlaybackState();
     if (!res.error){
       //setState('play');
+      // should check whether this behavior is still required now that we are running via a state machine
     }
   }
 
@@ -344,25 +345,7 @@ async function updateServer() {
     setState('error',res);
     return;
   }
-  
-  /*
-  res=await updateAmp();
-  if(res.error){
-    setState('error',res);
-    return;
-  }
-
-  if (ampStatus.power=='OFF'){
-	  setState('wait');
-	  return;
-  }
-  
-  if ((ampStatus.sourceIndex!='4')&&(ampStatus.streamType!='2')){
-	  setState('scan');
-	  return;
-  }
-  */
-  
+    
 }
 
 async function updatePlayback() {
@@ -508,9 +491,9 @@ async function reinitialize() {
     return;
   }
   // initial update
-  updateClock();
+  await updateClock();
   await updateServer();
-  getInitialPlaybackState();
+  await getInitialPlaybackState();
 }
 	
 async function updateScanning() {
