@@ -65,7 +65,7 @@ const gFileName = {
 // error handler
 process.on('unhandledRejection', (err) => {
 
-  console.log(err);
+  debug(err);
   process.exit(1);
 });
 
@@ -140,17 +140,22 @@ function debug(msg) {
   console.log(msg);
 }
 
+function initDemoMode() {
+	Config.demoMode = true; // to allow demo mode to be used as a fallback if the socket fails for some reason
+	demoUpdate();
+	setInterval(demoUpdate,Config.demoCycleTime * 1000);
+}
+
 // start the server
 async function run() {
   debug('starting lyngdorf_server, press \'q\' to exit');
   if(typeof Config.shutdownOnControlSignal === 'undefined')
     Config.shutdownOnControlSignal=false;
     
-	readline.emitKeypressEvents(process.stdin);
+  readline.emitKeypressEvents(process.stdin);
 
-	if (process.stdin.isTTY)
-		process.stdin.setRawMode(true);
-
+  if (process.stdin.isTTY)
+    process.stdin.setRawMode(true);
     
   var server = createServer();
   setupRoutes(server);
@@ -158,21 +163,23 @@ async function run() {
   await server.start();
   debug(`Server running at: ${server.info.uri}`);
   if (Config.demoMode) {
-	  demoUpdate();
-	setInterval(demoUpdate,Config.demoCycleTime * 1000);
+	initDemoMode();
   } else {
 	  client = new net.Socket();
-	  client.connect(84, Config.lyngdorfaddress, function() {
-	  console.log('Lyngdorf device Connected');
+	  var res=await client.connect(84, Config.lyngdorfaddress, function() {
+	  debug('Lyngdorf device Connected');});
 	  client.write('!VERB(0)?\n');
+	  client.on('data', function(data) {
+	    processResponse(Buffer.from(data).toString());
 	  });
-		client.on('data', function(data) {
-		processResponse(Buffer.from(data).toString());
-		});
-		client.on('close', function() {
-		console.log('Connection closed');
-		});  
-		getStatus();
+	  client.on('close', function() {
+	    debug('Connection closed');
+	  });  
+	  client.on('error', function() {
+	    debug('Socket error, falling back to demo mode');
+	    initDemoMode();
+	  });  
+	  getStatus();
 	}
   if (controlSignal)
 	  if (controlSignal.readSync()) {

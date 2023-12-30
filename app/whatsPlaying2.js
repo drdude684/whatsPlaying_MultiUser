@@ -734,7 +734,7 @@ async function getPlaybackState() {
     }
     
     //if((ampStatus.streamType!='2')||(ampStatus.sourceIndex!='8')){
-    if(ampStatus.sourceIndex!='8'){
+    if((Config.preferedPlayer!=='')&&(ampStatus.sourceIndex!='8')){
 		debug('amplifier is not streaming spotify, returning to scanning mode');		
 		setState('scan');// perhaps consider returning to 'wait' state
 		return {data:null};
