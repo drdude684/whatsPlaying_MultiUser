@@ -4,5 +4,6 @@ myconfig2.js
 node_modules
 package-lock.json
 data/*
+server/data/*
 
 dummyserver.js
