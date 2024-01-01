@@ -14,7 +14,7 @@ const Gpio = require('onoff').Gpio;
 
 var readline = require('readline');
 
-var lastkeyname=' ';
+var lastkeyname='';
 
 process.stdin.on('keypress', (chunk, key) => {
 	if (key) {
@@ -176,8 +176,12 @@ async function run() {
 	    debug('Connection closed');
 	  });  
 	  client.on('error', function() {
-	    debug('Socket error, falling back to demo mode');
-	    initDemoMode();
+	    if (Config.demoIfError) {
+		  debug('Socket error, falling back to demo mode');
+		  initDemoMode();
+		} else {
+		  debug('Socket error');
+		}
 	  });  
 	  getStatus();
 	}
@@ -269,10 +273,13 @@ function processResponse(resp){
 	}
 	switch(lastkeyname) {
 		// keyboard input on the terminal can be used to fake some signals. Nice for debugging.
-		case 'o': currentStatus.power='ON';break;
-		case 'p': currentStatus.power='OFF';break;
-		case '4': currentStatus.sourceName='TV';currentStatus.sourceIndex='4';break;
-		case '8': currentStatus.sourceName='Spotify';currentStatus.sourceIndex='8';break;
+		case 'o': debug('key \'o\': power \'ON\'');currentStatus.power='ON';break;
+		case 'p': debug('key \'p\': power \'OFF\'');currentStatus.power='OFF';break;
+		case 'm': debug('key \'m\': mute \'ON\'');currentStatus.mute='ON';break;
+		case 'n': debug('key \'n\': mute \'OFF\'');currentStatus.mute='OFF';break;
+		case '4': debug('key \'4\': source \'4\'');currentStatus.sourceName='TV';currentStatus.sourceIndex='4';break;
+		case '8': debug('key \'8\': source \'8\'');currentStatus.sourceName='Spotify';currentStatus.sourceIndex='8';break;
+		case ' ': debug('spacebar pressed, clearing key control');lastkeyname='';break;
 	}
 	if (Config.shutdownOnControlSignal) 
 	  currentStatus.controlSignal=controlSignal.readSync();
