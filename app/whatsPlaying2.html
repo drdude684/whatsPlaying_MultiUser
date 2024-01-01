@@ -56,6 +56,17 @@
           from {opacity: 0;}
           to {opacity: 0.2;}
       }
+
+      @-webkit-keyframes fadeToFull {
+          from {opacity: 0;}
+          to {opacity: 1.0;}
+      }
+
+      @keyframes fadeToFull {
+          from {opacity: 0;}
+          to {opacity: 1.0;}
+      }
+
       @-webkit-keyframes fadeOut {
           from {opacity: 1;}
           to {opacity: 0;}
@@ -138,16 +149,31 @@
           height: 80%;
       }
 
-      .tvlogo {
+      .tvLogo {
           float: right;
           position: absolute;
-          top: 15cqh;
+          top: 20cqh;
           right: 0;
           margin: 5cqh 2cqw;
           height: 30cqh;
           -webkit-animation: fadeToDim 2.0s;
           animation: fadeToDim 2.0s;
           opacity: 0.2
+      }
+      
+      .logoBox {
+		  display: none
+	  }
+
+      .mutelogo {
+          float: right;
+          position: absolute;
+          top: 50cqh;
+          right: 1.5cqw;
+          margin: 5cqh 2cqw;
+          height: 20cqh;
+          -webkit-animation: fadeToFull 1.0s;
+          animation: fadeToFull 1.0s;
       }
 
       .screenContent {
@@ -384,8 +410,8 @@
         <div id="tvScreen" class="screen screenOff">
            <div class="screenContent">
 			  <div id="bigTvClock" class="bigClock"></div>
-              <div id="tvContent" class="tvContent">TV</div> 
-              <img id="tvlogo" class="tvlogo" src="television-icon-white.png"></img>
+              <div id="tvContent" class="tvContent"><!--- not yet anything interesting to put here --></div> 
+              <img id="tvLogo" class="tvLogo" src="television-icon-white.png"></img>              
            </div>
         </div>
 
@@ -425,6 +451,9 @@
            <div id="playingPlaylist" class="playingItem playingPlaylist"></div>
         </div>
 
+	  <div id="muteLogoBox" class="logoBox">
+		  <img id="mutelogo" class="mutelogo" src="volume-silent-icon.svg"></img>				  
+	  </div>
     </div>
 
 </body>

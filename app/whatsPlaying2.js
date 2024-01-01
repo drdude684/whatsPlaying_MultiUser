@@ -566,6 +566,19 @@ async function updateAmpScan() {
     return;
   }
   
+  var muteLogo = document.getElementById("muteLogoBox");
+  debug(ampStatus.mute);
+  debug(muteLogo.style);
+  if (ampStatus.mute==='ON') {
+	  if (muteLogo.style.display !== "block") {
+		  debug('showing');
+		  muteLogo.style.display = "block";
+	  }
+  } else if (muteLogo.style.display === "block") {
+		debug('hiding');
+		muteLogo.style.display = "none";
+  }
+  
   if(ampStatus.power=='OFF'){
 	  setState('wait');
 	  return;
