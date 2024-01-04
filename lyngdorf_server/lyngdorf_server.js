@@ -14,7 +14,8 @@ const Gpio = require('onoff').Gpio;
 
 var readline = require('readline');
 
-var lastkeyname='';
+var lastkeyname = '';
+var lastScreenPowerState = true;
 
 process.stdin.on('keypress', (chunk, key) => {
 	if (key) {
@@ -150,7 +151,9 @@ function initDemoMode() {
 async function run() {
   debug('starting lyngdorf_server, press \'q\' to exit');
   if(typeof Config.shutdownOnControlSignal === 'undefined')
-    Config.shutdownOnControlSignal=false;
+    Config.shutdownOnControlSignal = false;
+  if(typeof Config.powerScreenByAmp === 'undefined')
+    Config.powerScreenByAmp = false;
     
   readline.emitKeypressEvents(process.stdin);
 
@@ -237,6 +240,14 @@ async function post(options) {
   return {response: {statusCode: status}, body: res};
 }
 
+function setScreenPower(state) {
+  debug(state);
+  switch(state) {
+    case true: if (!lastScreenPowerState) { debug('switching screen on'); shell.exec('ddcutil setvcp D6 01');lastScreenPowerState = true};break;
+    case false: if (lastScreenPowerState) { debug('switching screen off'); shell.exec('ddcutil setvcp D6 05');lastScreenPowerState = false};break;
+  }
+}
+
 function processResponse(resp){
 	var verb='';
 	var val='';
@@ -252,7 +263,7 @@ function processResponse(resp){
 			break;
 			case ')':
 			  switch(verb){
-				  case 'PWR': currentStatus.power=val;break;
+				  case 'PWR': currentStatus.power=val; if (Config.powerScreenByAmp) setScreenPower(currentStatus.power==='ON'); break;
 				  case 'VOL': currentStatus.volume=val;break;
 				  case 'SRC': currentStatus.sourceIndex=val;break;
 				  case 'MUTE': currentStatus.mute=val;break;
@@ -302,6 +313,7 @@ function getStatus(req, h) {
 	  client.write('!MUTE?\n');
 	  client.write('!STREAMTYPE?\n');
   }
+  
   
   return currentStatus;
   
