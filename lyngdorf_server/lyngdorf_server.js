@@ -241,7 +241,7 @@ async function post(options) {
 }
 
 function setScreenPower(state) {
-  debug(state);
+  //debug(state);
   switch(state) {
     case true: if (!lastScreenPowerState) { debug('switching screen on'); shell.exec('ddcutil setvcp D6 01');lastScreenPowerState = true};break;
     case false: if (lastScreenPowerState) { debug('switching screen off'); shell.exec('ddcutil setvcp D6 05');lastScreenPowerState = false};break;
