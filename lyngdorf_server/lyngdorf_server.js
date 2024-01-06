@@ -158,6 +158,8 @@ async function run() {
     Config.shutdownOnControlSignal = false;
   if(typeof Config.powerScreenByAmp === 'undefined')
     Config.powerScreenByAmp = false;
+  if(typeof exports.refreshInterval === 'undefined')
+    exports.refreshInterval = 500;
     
   readline.emitKeypressEvents(process.stdin);
 
