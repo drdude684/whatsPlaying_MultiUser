@@ -91,11 +91,12 @@
       }
 
       .screenOn {
-          display: block;
-          /* -webkit-animation: fadeIn 1.0s;
-          animation: fadeIn 1.0s; */
-           width: 100%;
-           height: 92%;
+        display: block;
+        /* -webkit-animation: fadeIn 1.0s;
+        animation: fadeIn 1.0s; */
+        width: 100%;
+        height: 100%;
+        container-type: size;
       }
 
       .screenOff {
@@ -112,14 +113,15 @@
       }
 
       .titleBar {
-          height: 8cqh;
-          width: 100%;
-          font-size: 3.5cqh;
-          display: flex;
-          flex-direction: row;
-          justify-content: space-between;
-          align-items: center;
-          padding: 0.5cqh 2cqh;
+        display:none !important;
+        height: 8cqh;
+        width: 100%;
+        font-size: 3.5cqh;
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.5cqh 2cqh;
       }
 
       .title {
@@ -132,26 +134,32 @@
       }
 
       .bigClock {
-			height: 72cqh;
-			width: 100%;
-			position: static;
-			font-size: 70cqh;
-			font-weight: lighter;          
-			text-shadow: 0px 0px 20px white;
-			color: white;
-			line-height: 120%;
+        height: 80%;
+        width: 100%;
+        margin: auto;
+        align-items: center;
+        justify-content: center;
+        position: static;
+        font-size: 70cqh;
+        font-weight: lighter;          
+        text-shadow: 0px 0px 20px white;
+        color: white;
+        line-height: 140%;
       }
 
       .errorClock {
-			height: 72cqh;
-			width: 100%;
-			position: static;
-			font-size: 70cqh;
-			font-weight: lighter;          
-			text-shadow: 0px 0px 20px red;
-			color: red;
-			line-height: 120%;
-	  }
+        height: 80%;
+        width: 100%;
+        margin: auto;
+        align-items: center;
+        justify-content: center;
+        position: static;
+        font-size: 70cqh;
+        font-weight: lighter;          
+        text-shadow: 0px 0px 20px red;
+        color: red;
+        line-height: 140%;
+       }
 
       .logo {
           display: inline-block;
@@ -242,10 +250,10 @@
           display: flex;
           flex-direction: row;
           /* gap: 1em; */
-          padding: 2cqh 5cqh;
+          padding: 2cqh 2cqw;
           justify-content: center;
           align-items: center;
-          height: 84cqh;
+          height: 95cqh;
           text-shadow: 2px 2px 1px black;
           -webkit-animation: fadeIn 2.0s;
           animation: fadeIn 2.0s;
@@ -256,25 +264,25 @@
           opacity: 0; /* hide until there is an image but retain screen space */
           min-width: 21cqh;
           /* max-width: 80vh; */
-          max-width: 80cqh;
+          max-width: 91cqh;
           min-height: 21cqh;
           /* max-height: 80vh; */
-          max-height: 80cqh;
+          max-height: 91cqh;
           border: 0.13vh solid #777;
           box-shadow: 0.52vh 0.52vh 1.30vh -0.26vh rgb(255 255 255 / 50%);
       }
 
       .playingInfo {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          margin-left: 2cqh;
-	  padding: 1cqh 3cqw;
-          justify-content: center;
-          flex: 1 1 50%;
-          font-size: 5cqh;
-          font-weight: normal;
-          text-align: center;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin-left: 2cqh;
+        padding: 1cqh 3cqw;
+        justify-content: center;
+        flex: 1 1 50%;
+        font-size: 5cqh;
+        font-weight: normal;
+        text-align: center;
       }
 
       .playingItem {
@@ -289,7 +297,7 @@
         justify-content: center;
         font-size: 14cqh;
         font-weight: bolder;
-        height: 45cqh;
+        height: 52cqh;
         overflow: scroll;
       }
 
@@ -320,12 +328,12 @@
       .playingPlaylist {
         display: flex;
         margin: auto;
-        align-items: center;
+        /* align-items: center; */
         justify-content: left;
-        height: 4cqh;
+        height: 5cqh;
         font-size: 4cqh;
         padding: 0 4cqh;
-        line-height: 60%; 
+        line-height: 60%;
       }
 
       .playingMeter {

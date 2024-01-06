@@ -53,7 +53,7 @@ var shell = require('shelljs');
 var net = require('net');
 var client;
 
-var currentStatus={power:'UNKNOWN',volume:'UNKNOWN',sourceIndex:'-1',sourceName:'UNKNOWN',mute:'UNKNOWN',streamType:'UNKNOWN',controlSignal:'UNKNOWN'};
+var currentStatus={power:'UNKNOWN',volume:'UNKNOWN',sourceIndex:'-1',sourceName:'UNKNOWN',mute:'UNKNOWN',streamType:'UNKNOWN',controlSignal:'UNKNOWN',connected:false,demoMode:false};
 
 var demoLoopIndex=0;
 
@@ -138,11 +138,15 @@ function setupRoutes(server) {
 function debug(msg) {
   if (!Config.debug)
     return;
-  console.log((new Date().toUTCString())+' '+msg);
+  switch(typeof(msg)) {
+    case 'string': console.log((new Date().toUTCString())+' '+msg);break;
+    default: console.log((new Date().toUTCString()));console.log(msg);break;
+  }
 }
 
 function initDemoMode() {
 	Config.demoMode = true; // to allow demo mode to be used as a fallback if the socket fails for some reason
+  currentStatus.demoMode = true;
 	demoUpdate();
 	setInterval(demoUpdate,Config.demoCycleTime * 1000);
 }
@@ -194,6 +198,9 @@ async function run() {
 	  } else {
 		debug('control Signal line is high');
 	  }
+    
+  if (Config.refreshInterval>0)
+    setInterval(refreshStatus,Config.refreshInterval);
 
 };
 
@@ -241,10 +248,12 @@ async function post(options) {
 }
 
 function setScreenPower(state) {
-  //debug(state);
-  switch(state) {
-    case true: if (!lastScreenPowerState) { debug('switching screen on'); shell.exec('/usr/local/bin/screen_on.sh');lastScreenPowerState = true};break;
-    case false: if (lastScreenPowerState) { debug('switching screen off'); shell.exec('/usr/local/bin/screen_off.sh');lastScreenPowerState = false};break;
+  if (currentStatus.connected) {
+    // only fiddle with the screen if there is actually an amp connected
+    switch(state) {
+      case true: if (!lastScreenPowerState) { debug('switching screen on'); shell.exec('/usr/local/bin/screen_on.sh');lastScreenPowerState = true};break;
+      case false: if (lastScreenPowerState) { debug('switching screen off'); shell.exec('/usr/local/bin/screen_off.sh');lastScreenPowerState = false};break;
+    }
   }
 }
 
@@ -252,6 +261,9 @@ function processResponse(resp){
 	var verb='';
 	var val='';
 	var mode='drop'
+  
+  currentStatus.connected=true;
+  
 	for (let i=0;i<resp.length;i++){
 		var c=resp.charAt(i);
 		switch(c) {
@@ -298,10 +310,8 @@ function processResponse(resp){
 	return;
 }
 
-function getStatus(req, h) {
-	// we send some status word requests to the Lyngdorf device.
-	// note that most likely the responses will not yet be in when this function returns.
-  	
+function refreshStatus() {
+	// we send some status word requests to the Lyngdorf device.  	
   if (Config.demoMode){
     //debug('get status requested (demo mode)');
   }  else {
@@ -313,21 +323,26 @@ function getStatus(req, h) {
 	  client.write('!MUTE?\n');
 	  client.write('!STREAMTYPE?\n');
   }
+  //debug(currentStatus);  
+}  
   
-  
+function getStatus(req, h) {
+  if (Config.refreshInterval == 0)
+    refreshStatus();
   return currentStatus;
-  
 }
 
 function demoUpdate() {
 	switch (demoLoopIndex++){
-		case 0: debug('demo mode, changing state: power on');currentStatus.power='ON'; currentStatus.sourceIndex=1;currentStatus.sourceName='1';break;
-		case 1: debug('demo mode, changing state: input Spotify');currentStatus.sourceIndex=8;currentStatus.sourceName='Spotify';currentStatus.streamType='Spotify';break;
-		case 2: debug('demo mode, changing state: input TV');currentStatus.sourceIndex=4;currentStatus.sourceName='TV';break
-		case 3: debug('demo mode, changing state: power off');currentStatus.power='OFF'; currentStatus.sourceIndex=1; currentStatus.sourceName='1';break;
+		case 0: debug('demo mode, changing state: power on');currentStatus.power='ON'; currentStatus.sourceIndex=1;currentStatus.sourceName='other source';break;
+		case 1:
+    case 2: debug('demo mode, changing state: input Spotify');currentStatus.sourceIndex=8;currentStatus.sourceName='Spotify';currentStatus.streamType='Spotify';break;
+		case 3: debug('demo mode, changing state: input TV');currentStatus.sourceIndex=4;currentStatus.sourceName='TV';break
+		case 4: debug('demo mode, changing state: input TV (MUTED)');currentStatus.sourceIndex=4;currentStatus.sourceName='TV';currentStatus.mute='ON';break
+		case 5: debug('demo mode, changing state: power off');currentStatus.power='OFF'; currentStatus.sourceIndex=1; currentStatus.sourceName='1';currentStatus.mute='OFF';break;
 	}
-  debug(currentStatus);
-  if(demoLoopIndex>3)
+  //debug(currentStatus);
+  if(demoLoopIndex>5)
     demoLoopIndex=0;
 }
 	

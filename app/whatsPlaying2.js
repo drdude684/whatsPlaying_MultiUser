@@ -566,6 +566,14 @@ async function updateAmpScan() {
     return;
   }
   
+  if (ampStatus.demoMode) {
+    // if the amp server is in demo mode, enter a pseudo demo mode of our own, where spotify 
+    // activity is shown for iPhones associated with the running servers
+    debug('setting pseudo demo mode');
+    Config.preferedPlayer='iPhone';
+  }
+  
+  
   var muteLogo = document.getElementById("muteLogoBox");
   if (ampStatus.mute==='ON') {
 	  if (muteLogo.style.display !== "block") {
