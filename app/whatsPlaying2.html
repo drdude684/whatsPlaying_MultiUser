@@ -144,7 +144,7 @@
         font-weight: lighter;          
         text-shadow: 0px 0px 20px white;
         color: white;
-        line-height: 130%;
+        /* line-height: 130%; */
       }
 
       .errorClock {
@@ -158,7 +158,7 @@
         font-weight: lighter;          
         text-shadow: 0px 0px 20px red;
         color: red;
-        line-height: 130%;
+        /* line-height: 130%; */
        }
 
       .logo {
@@ -170,7 +170,7 @@
       .tvLogo {
           float: right;
           position: absolute;
-          top: 20cqh;
+          top: 15cqh;
           right: 1.5cqw;
           margin: 5cqh 2cqw;
           height: 30cqh;
@@ -418,6 +418,7 @@
 
         <div id="loginScreen" class="screen screenOff">
            <div class="screenContent">
+              <div id="loginContent_top" class="loginContent"></div>
 			  <div id="bigClockLogin" class="bigClock"></div>
               <div id="loginContent" class="loginContent"></div>
            </div>
@@ -425,6 +426,7 @@
 
         <div id="errorScreen" class="screen screenOff">
            <div class="screenContent">
+              <div id="errorContent_top" class="errorContent"></div>
 			  <div id="bigClockError" class="errorClock"></div>
               <div id="errorContent" class="errorContent"></div>
            </div>
@@ -444,6 +446,8 @@
 
         <div id="scanningScreen" class="screen screenOff">
            <div class="screenContent">
+              <div id="scanningContent_top" class="scanningContent"></div>
+              <div id="scanningContent_top2" class="scanningContent"></div>
 			  <div id="bigClockScanning" class="bigClock"></div>
               <div id="scanningContent" class="scanningContent"></div>
               <div id="scanningContent2" class="scanningContent"></div>
@@ -452,7 +456,8 @@
 
         <div id="tvScreen" class="screen screenOff">
            <div class="screenContent">
-			  <div id="bigTvClock" class="bigClock"></div>
+	          <div id="tvContent_top" class="tvContent"><!--- not yet anything interesting to put here --></div> 
+    		  <div id="bigTvClock" class="bigClock"></div>
               <div id="tvContent" class="tvContent"><!--- not yet anything interesting to put here --></div> 
               <img id="tvLogo" class="tvLogo" src="television-icon-white.png"></img>              
            </div>
@@ -460,6 +465,7 @@
 
         <div id="clockScreen" class="screen screenOff">
            <div class="screenContent">
+              <div id="clockContent_top" class="clockContent"></div>
 			  <div id="bigClockClock" class="bigClock"></div>
               <div id="clockContent" class="clockContent"></div>
            </div>
