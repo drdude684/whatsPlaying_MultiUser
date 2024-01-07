@@ -259,14 +259,23 @@
           animation: fadeIn 2.0s;
       }
     
+      .albumImageContent {
+        display: flex;
+        flex-direction: column;
+        align-items: start;
+        justify-content: start;
+        flex: 1 1 50%; 
+        height: 100%;
+        min-width: 20cqw;
+        max-width: 40cqw;
+      }
+
       .playingAlbumImage {
           flex: 1 1 50%;
           opacity: 0; /* hide until there is an image but retain screen space */
           min-width: 21cqh;
-          /* max-width: 80vh; */
           max-width: 91cqh;
           min-height: 21cqh;
-          /* max-height: 80vh; */
           max-height: 91cqh;
           border: 0.13vh solid #777;
           box-shadow: 0.52vh 0.52vh 1.30vh -0.26vh rgb(255 255 255 / 50%);
@@ -358,7 +367,7 @@
       .playingControls {
           display: none; /* hidden until we need it */
           /* width: 14em; */
-          margin-top: 0cqh;
+          margin-top: 2cqh;
           padding: 0.5cqh;
           border: 0.26cqh solid #333;
           /*border-radius: 1em;*/
@@ -366,12 +375,12 @@
 
       .playingControl {
           display: inline-block;
-          margin: 0 3cqh 0 3cqh;
+          margin: 2cqw 2cqh;
       }
 
       .playingControl svg {
-          width: 4cqh;
-          height: 4cqh;
+          width: 5cqh;
+          height: 5cqh;
           fill: white;
       }
 
@@ -458,16 +467,8 @@
 
         <div id="playingScreen" class="screen screenOff">
            <div class="playingContent">
-              <img id="playingAlbumImage" class="playingAlbumImage"></img>
-              <div class="playingInfo">
-                 <div id="playingTrack" class="playingTrack playingItem"></div>
-                 <div id="playingArtist" class="playingArtist playingItem"></div>
-                 <div id="playingAlbum" class="playingAlbum playingItem"></div>
-<!--                 <div id="playingDate" class="playingDate playingItem"></div> -->
-                 <div id="playingMeter" class="playingMeter playingItem">
-                    <span id="playingMeterValue"></span>
-                 </div>
-
+              <div class="albumImageContent">
+                <img id="playingAlbumImage" class="playingAlbumImage"></img>
                  <div id="playingControls" class="playingControls playingItem">
                     <div id="playingPrev" class="playingControl" onclick="uiCmd('prev');">
                        <svg><use xlink:href="#iconPrev"/></svg>
@@ -479,6 +480,17 @@
                        <svg><use xlink:href="#iconNext"/></svg>
                     </div>
                  </div>
+              </div>
+                 
+              <div class="playingInfo">
+                 <div id="playingTrack" class="playingTrack playingItem"></div>
+                 <div id="playingArtist" class="playingArtist playingItem"></div>
+                 <div id="playingAlbum" class="playingAlbum playingItem"></div>
+<!--                 <div id="playingDate" class="playingDate playingItem"></div> -->
+                 <div id="playingMeter" class="playingMeter playingItem">
+                    <span id="playingMeterValue"></span>
+                 </div>
+
               </div>
            </div>
 

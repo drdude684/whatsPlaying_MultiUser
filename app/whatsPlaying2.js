@@ -671,6 +671,9 @@ function updatePlayingScreen(data) {
       }
     }
   }
+  
+  if (document.documentElement.clientWidth !== 1600) 
+    showPlayControls(true);
 }
 
 function getArtistName(artists) {
