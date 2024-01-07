@@ -534,7 +534,7 @@ async function updateScanning() {
     if (data.device) {
 	  scanMessage=scanMessage+', found: '+data.device.name;
       if (data.device.name===Config.preferedPlayer){
-        if {data.is_playing) {
+        if (data.is_playing) {
           debug('scan result positive: found server ('+gCurrentServer+') streaming to prefered device '+data.device.name);
           gNowScanning=false;	
           reinitialize();
