@@ -40,7 +40,7 @@ var gState = 'init';
 var gLastState = 'init';
 const gStateTimerMap = new Map([
   ["wait",  new Map([["clock",1],["timeBar",0],["server",0],["playback",0],["scanning",0],["ampScan",1]])],
-  ["scan",  new Map([["clock",1],["timeBar",0],["server",1],["playback",0],["scanning",1],["ampScan",1]])],
+  ["scan",  new Map([["clock",1],["timeBar",0],["server",0],["playback",0],["scanning",1],["ampScan",1]])],
   ["play",  new Map([["clock",1],["timeBar",1],["server",1],["playback",1],["scanning",0],["ampScan",1]])],
   ["tv",    new Map([["clock",1],["timeBar",0],["server",0],["playback",0],["scanning",0],["ampScan",1]])],
   ["sleep", new Map([["clock",1],["timeBar",0],["server",0],["playback",0],["scanning",0],["ampScan",1]])],
@@ -90,7 +90,7 @@ var gTimer = {
   ampscan: {
     label: "ampScan",
     callback: updateAmpScan,
-    interval: 1000,
+    interval: 2000,
     lastTic: 0,
   },
 };
@@ -112,10 +112,7 @@ async function initialize() {
 
   if (!Config.idleMinutes)
     Config.idleMinutes = 5;
-  
-  if(!Config.errorTimeout)
-    Config.errorTimeOut=60;
-      
+    
   // trap our hotkeys
   window.addEventListener("keydown", function(event)
   {
@@ -151,11 +148,12 @@ async function initialize() {
 
   elem = document.getElementById('sleepContent');
   elem.innerHTML = `Wake me at<br><br>${gLoginUrl}`;
-  
+
+  setState('error',res);
   // initial update
   updateClock();
   await updateAmp();
-  await updateServer();
+  //await updateServer();
 
   setInterval(timerUpdates, 1000);
   
@@ -227,8 +225,7 @@ function uiCmd(cmd) {
 }
 
 function handleError(err) {
-  debug('handling error');
-  debug(err);		
+		
   if (!err)
     err = {error: 'unknown'};
 
@@ -285,7 +282,7 @@ function activateClock(){
 	updateClock();
 	selectScreen('clockScreen');
 	var elem = document.getElementById('clockContent');
-	elem.innerHTML='';
+	elem.innerHTML='Clock screen';
 }
 
 function activatePlay(){
@@ -307,7 +304,6 @@ function activateError(data){
 }
 
 function activateScan(){
-  getPlaybackState();
   selectScreen('scanningScreen');
 }
 
@@ -326,7 +322,26 @@ async function updateServer() {
       // fall through
     }
   }
- 
+  
+  if (gState=='error')
+    return;
+  
+  var res;
+  res=await updateAmp();
+  if(res.error){
+    setState('error',res);
+  }
+
+  if (ampStatus.power=='OFF'){
+	  setState('wait');
+	  return;
+  }
+  
+  if ((ampStatus.sourceIndex!='4')&&(ampStatus.streamType!='2')){
+	  setState('scan');
+	  return;
+  }
+  
   var curToken = gAccessToken;
   var res = await getLocal('accessToken');
   if (res.error)
@@ -337,18 +352,17 @@ async function updateServer() {
     res = await getInitialPlaybackState();
     if (!res.error){
       //setState('play');
-      // should check whether this behavior is still required now that we are running via a state machine
     }
   }
 
-  if(res.error) {
+  if(res.error)
     setState('error',res);
-    return;
-  }
-    
+  
 }
 
 async function updatePlayback() {
+  if(gState!='play')
+    return;
   var res;
 
   if (!gAccessToken || gState=='sleep' || gState=='wait')
@@ -367,10 +381,8 @@ async function updatePlayback() {
     }
   }
 
-  if (res.error) {
+  if (res.error)
     setState('error',res);
-    return;
-  }
 }
 
 async function getInitialPlaybackState() {
@@ -379,8 +391,6 @@ async function getInitialPlaybackState() {
   if (res.error)
     return res;
   if (!gNowPlaying.id) {  // nothing playing, show most recent
-debug('nothing playing yet, fetching most recent');
-debug(gNowPlaying);
     res = await getRecentlyPlayed();
     if (res.error)
       return res;
@@ -464,7 +474,7 @@ function updateClock() {
     
   if (gState=='error') {
     var now = Date.now();
-    if (now - gNowPlaying.errorTime > (Config.errorTimeout * 1000)) { // show error for 2 minutes, then return to main screen
+    if (now - gNowPlaying.errorTime > (2 * 60 * 1000)) { // show error for 2 minutes, then return to main screen
 	  debug('error screen was shown for some time, now returning to our regular programming...');	
       setState('wait');
       return;
@@ -486,22 +496,32 @@ async function reinitialize() {
   elem = document.getElementById('sleepContent');
   elem.innerHTML = `Wake me at<br><br>${gLoginUrl}`;
 
-  if(res.error) {
+  if(res.error)
     setState('error',res);
-    return;
-  }
   // initial update
-  await updateClock();
+  updateClock();
   await updateServer();
-  await getInitialPlaybackState();
+  getInitialPlaybackState();
 }
 	
 async function updateScanning() {
+  if (gState!='scan')
+    return;
   if (Config.preferedPlayer===''){
 	  setState('play');
 	  return;
   }
-  if(ampStatus.sourceIndex!='8'){
+  if(ampStatus.power=='OFF'){
+	  setState('wait');
+	  return;
+  }
+  
+  if(ampStatus.sourceIndex=='4'){
+	  setState('tv');
+	  return;
+  }
+  
+  if(ampStatus.streamType!=2){
 	  debug('Amplifier input not set to Spotify, so we skip asking Spotify anything');
 	  scanMessageElement = document.getElementById('scanningContent');
 	  scanMessageElement.innerHTML = 'Spotify not active on amplifier';
@@ -513,6 +533,7 @@ async function updateScanning() {
   var now = new Date();
   if (now == gLastVal.scanClock)
     return;
+
   gCurrentServer=gCurrentServer+1;
   if (gCurrentServer>Config.serverUrls.length-1)
     gCurrentServer=0;
@@ -523,10 +544,10 @@ async function updateScanning() {
   var scanMessage='scanning server '+gCurrentServer+' for the activation of a device named \"'+Config.preferedPlayer+'\"';
 
   var res = await spotifyApi(spotifyRoutes.playbackState);
-  if (res.error) {
-	setState('error',res);
-    return;
-  }
+
+  if (res.error)
+    return res;
+
   var data = res.data;
 
   if ( data == null ) {
@@ -534,18 +555,15 @@ async function updateScanning() {
     if (data.device) {
 	  scanMessage=scanMessage+', found: '+data.device.name;
       if (data.device.name===Config.preferedPlayer){
-        if (data.is_playing) {
-          debug('scan result positive: found server ('+gCurrentServer+') streaming to prefered device '+data.device.name);
-          gNowScanning=false;	
-          reinitialize();
-          setState('play');
-        }
-        else
-          debug('scan result negative: found server ('+gCurrentServer+') set to stream to prefered device '+data.device.name+', but not yet playing');
+		  debug('scan result positive: found server ('+gCurrentServer+') streaming to prefered device '+data.device.name);
+		  gNowScanning=false;	
+		  reinitialize();
+		  setState('play');
 	  } else
         debug('scan result negative: found server ('+gCurrentServer+') streaming to non-prefered device '+data.device.name);
     }
   }
+    
   scanMessageElement = document.getElementById('scanningContent');
   if (scanMessage)
     scanMessageElement.innerHTML = scanMessage;
@@ -556,13 +574,15 @@ async function updateScanning() {
 }
 	
 async function updateAmpScan() {
+  if((gState!='wait')&&(gState!='tv'))
+    return;
   var now = new Date();
   if (now == gLastVal.scanClock)
     return;
   gLastVal.scanClock = now;
 
   debug('checking amp status');
-
+  
   var res;
   res=await updateAmp();
   if (res.error){
@@ -570,46 +590,17 @@ async function updateAmpScan() {
     return;
   }
   
-  if (ampStatus.demoMode) {
-    // if the amp server is in demo mode, enter a pseudo demo mode of our own, where spotify 
-    // activity is shown for iPhones associated with the running servers
-    debug('setting pseudo demo mode');
-    Config.preferedPlayer='iPhone';
-  }
-  
-  
-  var muteLogo = document.getElementById("muteLogoBox");
-  if (ampStatus.mute==='ON') {
-	  if (muteLogo.style.display !== "block") {
-		  debug('showing');
-		  muteLogo.style.display = "block";
-	  }
-  } else if (muteLogo.style.display === "block") {
-		debug('hiding');
-		muteLogo.style.display = "none";
-  }
-  
-  if(ampStatus.power=='OFF'){
-	  setState('wait');
-	  return;
-  }
-
-  if ((ampStatus.sourceIndex=='4')&&(gState!='tv')) {
-		  setState('tv');
-		  return;
-	  }
-	  
-  if ((ampStatus.sourceIndex!='4')&&(gState=='tv')) {
+  if(gState=='tv') {
+	  if (ampStatus.sourceIndex!='4')
 		  setState('scan');
-		  return;
-	  }
-	  
-  if((ampStatus.power=='ON')&&(gState=="wait")){
+	  return;
+  } 
+  
+  if(ampStatus.power=='ON'){
 	  debug('amp is on, switching to scanning for spotify');
 	  setState('scan');
 	  return;
   }   
-  
 }
 
 function showPlayControls(show) {
@@ -671,9 +662,6 @@ function updatePlayingScreen(data) {
       }
     }
   }
-  
-  if (document.documentElement.clientWidth !== 1600) 
-    showPlayControls(true);
 }
 
 function getArtistName(artists) {
@@ -759,8 +747,7 @@ async function getPlaybackState() {
 		  }
     }
     
-    //if((ampStatus.streamType!='2')||(ampStatus.sourceIndex!='8')){
-    if((Config.preferedPlayer!=='')&&(ampStatus.sourceIndex!='8')){
+    if((ampStatus.streamType!='2')||(ampStatus.sourceIndex!='8')){
 		debug('amplifier is not streaming spotify, returning to scanning mode');		
 		setState('scan');// perhaps consider returning to 'wait' state
 		return {data:null};
@@ -998,6 +985,9 @@ async function getLocal(route)
 
 async function updateAmp()
 {
+  if (gState=='error')
+    return;
+    
   if (Config.lyngdorfServer==''){
     // return as if all is well
     ampStatus.power='ON';

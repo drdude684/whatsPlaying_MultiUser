@@ -140,7 +140,7 @@
         align-items: center;
         justify-content: center;
         position: static;
-        font-size: 70cqh;
+        font-size: min(70cqh,30cqw);
         font-weight: lighter;          
         text-shadow: 0px 0px 20px white;
         color: white;
@@ -154,7 +154,7 @@
         align-items: center;
         justify-content: center;
         position: static;
-        font-size: 70cqh;
+        font-size: min(70cqh,30cqw);
         font-weight: lighter;          
         text-shadow: 0px 0px 20px red;
         color: red;
@@ -262,21 +262,21 @@
       .albumImageContent {
         display: flex;
         flex-direction: column;
-        align-items: start;
-        justify-content: start;
+        align-items: center;
+        justify-content: space-evenly;
         flex: 1 1 50%; 
         height: 100%;
         min-width: 20cqw;
-        max-width: 40cqw;
+        max-width: min(90cqh,30cqw);
       }
 
       .playingAlbumImage {
           flex: 1 1 50%;
           opacity: 0; /* hide until there is an image but retain screen space */
           min-width: 21cqh;
-          max-width: 91cqh;
+          max-width: min(91cqh,30cqw);
           min-height: 21cqh;
-          max-height: 91cqh;
+          max-height: min(91cqh,30cqw);
           border: 0.13vh solid #777;
           box-shadow: 0.52vh 0.52vh 1.30vh -0.26vh rgb(255 255 255 / 50%);
       }
@@ -286,7 +286,7 @@
         flex-direction: column;
         align-items: center;
         margin-left: 2cqh;
-        padding: 1cqh 3cqw;
+        padding: 1cqh 1cqw;
         justify-content: center;
         flex: 1 1 50%;
         font-size: 5cqh;
