@@ -534,10 +534,14 @@ async function updateScanning() {
     if (data.device) {
 	  scanMessage=scanMessage+', found: '+data.device.name;
       if (data.device.name===Config.preferedPlayer){
-		  debug('scan result positive: found server ('+gCurrentServer+') streaming to prefered device '+data.device.name);
-		  gNowScanning=false;	
-		  reinitialize();
-		  setState('play');
+        if {data.is_playing) {
+          debug('scan result positive: found server ('+gCurrentServer+') streaming to prefered device '+data.device.name);
+          gNowScanning=false;	
+          reinitialize();
+          setState('play');
+        }
+        else
+          debug('scan result negative: found server ('+gCurrentServer+') set to stream to prefered device '+data.device.name+', but not yet playing');
 	  } else
         debug('scan result negative: found server ('+gCurrentServer+') streaming to non-prefered device '+data.device.name);
     }
