@@ -60,7 +60,13 @@ var demoLoopIndex=0;
 // -- globals --
 
 const gFileName = {
-  homePage: 'index.html',
+  homePage: 'lyngdorf_server/public/index.html',
+  playPage: 'app/whatsPlaying2.html',
+  config: 'app/myconfig2.js',
+  spLogo: 'app/Spotify_Logo_RGB_White.png',
+  tvIcon: 'app/television-icon-white.png',
+  muteIcon: 'app/volume-silent-icon.svg',
+  script: 'app/whatsPlaying2.js',
 };
 
 // error handler
@@ -86,7 +92,8 @@ function createServer() {
     routes: {
       cors: true,
       files: {
-        relativeTo: Path.join(__dirname, 'public')
+        //relativeTo: Path.join(__dirname, 'public')
+        relativeTo: Path.join(__dirname, '..')
       }
     }
   };
@@ -115,14 +122,46 @@ function setupRoutes(server) {
             }
   });
 
-
   // control: home page (login screen)
   server.route({
     method: 'GET',
     path: '/',
-    handler: function (req, h) { return h.file(gFileName.homePage); }
+    handler: function (req, h) { return h.file(gFileName.homePage); }    
   });
 
+  // control: play page (play screen)
+  server.route({
+    method: 'GET',
+    path: '/play',
+    handler: function (req, h) { return h.file(gFileName.playPage); }
+  });
+
+  // control: data for play screen
+  server.route({
+    method: 'GET',
+    path: '/myconfig2.js',
+    handler: function (req, h) { return h.file(gFileName.config); }
+  });
+  server.route({
+    method: 'GET',
+    path: '/whatsPlaying2.js',
+    handler: function (req, h) { return h.file(gFileName.script); }
+  });
+  server.route({
+    method: 'GET',
+    path: '/Spotify_Logo_RGB_White.png',
+    handler: function (req, h) { return h.file(gFileName.spLogo); }
+  });
+  server.route({
+    method: 'GET',
+    path: '/television-icon-white.png',
+    handler: function (req, h) { return h.file(gFileName.tvIcon); }
+  });
+  server.route({
+    method: 'GET',
+    path: '/volume-silent-icon.svg',
+    handler: function (req, h) { return h.file(gFileName.muteIcon); }
+  });
 
   // control: send status request
   server.route({
