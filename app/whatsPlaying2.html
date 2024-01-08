@@ -246,10 +246,21 @@
 		    font-size: 3.5cqh;          
       }
 
-      .playingContent {
+      .playingContent_landscape {
           display: flex;
           flex-direction: row;
-          /* gap: 1em; */
+          padding: 7cqh 2cqw 2cqh 2cqw;
+          justify-content: center;
+          align-items: center;
+          height: 95cqh;
+          text-shadow: 2px 2px 1px black;
+          -webkit-animation: fadeIn 2.0s;
+          animation: fadeIn 2.0s;
+      }
+
+      .playingContent_portrait {
+          display: flex;
+          flex-direction: column;
           padding: 7cqh 2cqw 2cqh 2cqw;
           justify-content: center;
           align-items: center;
@@ -292,6 +303,9 @@
         font-size: 5cqh;
         font-weight: normal;
         text-align: center;
+        container-type: size;
+        height: 100%;
+        width: 100%;
       }
 
       .playingItem {
@@ -472,8 +486,8 @@
         </div>
 
         <div id="playingScreen" class="screen screenOff">
-           <div class="playingContent">
-              <div class="albumImageContent">
+           <div id="playingContent" class="playingContent_landscape">
+              <div id="albumImageContent" class="albumImageContent">
                 <img id="playingAlbumImage" class="playingAlbumImage"></img>
                  <div id="playingControls" class="playingControls playingItem">
                     <div id="playingPrev" class="playingControl" onclick="uiCmd('prev');">

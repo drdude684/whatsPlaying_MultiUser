@@ -159,6 +159,8 @@ async function initialize() {
 
   setInterval(timerUpdates, 1000);
   
+  updateViewElements(); //initial sizing etc.
+  
   // always start by showing the clock
   setState('wait');
 }
@@ -614,7 +616,7 @@ async function updateAmpScan() {
 
 function showPlayControls(show) {
   var elem = document.getElementById('playingControls');
-  elem.style.display = show ? 'block' : 'none';
+  elem.style.display = show ? 'flex' : 'none';
 }
 
 function showPlayMeter(show) {
@@ -672,8 +674,6 @@ function updatePlayingScreen(data) {
     }
   }
   
-  if (document.documentElement.clientWidth !== 1600) 
-    showPlayControls(true);
 }
 
 function getArtistName(artists) {
@@ -1060,3 +1060,24 @@ function setState(requestedState, data)
 		};break;
 	}
 }
+
+function updateViewElements () {
+  debug(document.documentElement.clientWidth);
+  if (Config.autoPlayerControls)
+    showPlayControls((document.documentElement.clientWidth < 1590)||(document.documentElement.clientWidth > 1610)); 
+  if (document.documentElement.clientWidth>document.documentElement.clientHeight) {
+    var elem = document.getElementById("playingContent");
+    removeClass(elem, 'playingContent_portrait');
+    addClass(elem, 'playingContent_landscape');
+  } else {
+    var elem = document.getElementById("playingContent");
+    removeClass(elem, 'playingContent_landscape');
+    addClass(elem, 'playingContent_portrait');
+  }
+  updatePlayingScreen(gNowPlaying); 
+
+}
+
+window.addEventListener('resize', function(event){
+ updateViewElements(); 
+});
