@@ -95,26 +95,47 @@ var gTimer = {
   },
 };
 
+var gArguments;
+
+function processParameter(name,defaultValue) {
+  if (typeof(gArguments) == 'undefined')
+    gArguments = new URLSearchParams(window.location.search);
+  // if argument was passed over URL it takes precedence
+  if (gArguments.has(name)) {
+    Config[name] = gArguments.get(name);
+    // twiddle boolean string values into actual booleans
+    if(typeof(defaultValue) == 'boolean')
+      Config[name] = (Config[name].toLowerCase() === 'true');
+    debug('set parameter '+name+' from provided URL. New value: '+Config[name]);
+    return;
+  }
+  
+  if (typeof(Config[name]) == 'undefined') {
+    Config[name] = defaultValue;
+    debug('set parameter '+name+' to hard coded default value '+defaultValue);
+  }
+  
+  // now Config[name] exists and has value either from URL, config file, or hard coded default, in that order
+
+}
 
 // get everything started
 window.addEventListener('load', initialize, true);
 
-
 async function initialize() {
-	
-  if(!Config.serverUrls)
-    Config.serverUrls=['http://localhost/'];
-    	
-  for (i in Config.serverUrls) {	
-	  if (!Config.serverUrls[i].endsWith('/'))
-		Config.serverUrls[gCurrentServer] += '/';
-	}
 
-  if (!Config.idleMinutes)
-    Config.idleMinutes = 5;
+  processParameter('serverUrls',['http://localhost/']);
+  processParameter('idleMinutes',5);
+  processParameter('errorTimeOut',60);
+  processParameter('showPlayerControls',true);
+  processParameter('preferedPlayer','');  
+  processParameter('debug',false);
+  processParameter('idleMinutes',5);
+  processParameter('sleepMinutes',0);
+  processParameter('showMouse',true);
+  processParameter('lyngdorfServer','');
   
-  if(!Config.errorTimeout)
-    Config.errorTimeOut=60;
+  debug(Config);
       
   // trap our hotkeys
   window.addEventListener("keydown", function(event)
@@ -1062,9 +1083,6 @@ function setState(requestedState, data)
 }
 
 function updateViewElements () {
-  debug(document.documentElement.clientWidth);
-  if (Config.autoPlayerControls)
-    showPlayControls((document.documentElement.clientWidth < 1590)||(document.documentElement.clientWidth > 1610)); 
   if (document.documentElement.clientWidth>document.documentElement.clientHeight) {
     var elem = document.getElementById("playingContent");
     removeClass(elem, 'playingContent_portrait');
