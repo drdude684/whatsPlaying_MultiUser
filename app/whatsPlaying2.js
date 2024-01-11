@@ -232,8 +232,6 @@ function uiCmd(cmd) {
 
   if (cmd === 'play') {
     spotifyApi(gNowPlaying.isPlaying ? spotifyRoutes.playPause : spotifyRoutes.playPlay, arg);
-    // TODO: this can cause bounce if we get an update before it actually gets set
-    //gNowPlaying.isPlaying = !gNowPlaying.isPlaying;
   } else if (cmd === 'next') {
     spotifyApi(spotifyRoutes.playNext, arg);
   } else if (cmd === 'prev') {
