@@ -243,45 +243,55 @@
       .playingContent_landscape {
           display: flex;
           flex-direction: row;
-          padding: 7cqh 2cqw 2cqh 2cqw;
+          padding: 2cqh 2cqw;
           justify-content: center;
           align-items: center;
           height: 95cqh;
           text-shadow: 2px 2px 1px black;
           -webkit-animation: fadeIn 2.0s;
           animation: fadeIn 2.0s;
+          container-type: size;
       }
 
       .playingContent_portrait {
           display: flex;
           flex-direction: column;
-          padding: 7cqh 2cqw 2cqh 2cqw;
+          padding: 2cqh 2cqw;
           justify-content: center;
           align-items: center;
           height: 95cqh;
           text-shadow: 2px 2px 1px black;
           -webkit-animation: fadeIn 2.0s;
           animation: fadeIn 2.0s;
+          container-type: size;
       }
-    
+      
       .albumImageContent {
         display: flex;
+        flex: 0 0 50cqi;
         flex-direction: column;
         align-items: center;
-        justify-content: space-evenly;
-        flex: 1 1 50%; 
-        height: 100%;
-        min-width: 20cqw;
-        max-width: min(90cqh,30cqw);
+        flex: 0 1 min(96cqh,96cqw);
+        width: min(96cqh,96cqw);
+        height: min(96cqh,96cqw);
+        container-type: size;
       }
 
+      .albumImageBox {
+        flex: 1 1 100%;
+        display: flex;
+        width: 100%;
+        align-items: center;
+        justify-content: center;
+        container-type: size;
+      }
+      
       .playingAlbumImage {
-          flex: 1 1 50%;
+          object-fit: cover;
+          width: min(100cqh,100cqw);
+          height: min(100cqh,100cqw);
+          flex: 0 1 min(100cqh,100cqw);
           opacity: 0; /* hide until there is an image but retain screen space */
-          min-width: 21cqh;
-          max-width: min(91cqh,30cqw);
-          min-height: 21cqh;
-          max-height: min(91cqh,30cqw);
           border: 0.13vh solid #777;
           box-shadow: 0.52vh 0.52vh 1.30vh -0.26vh rgb(255 255 255 / 50%);
       }
@@ -293,7 +303,7 @@
         margin-left: 2cqh;
         padding: 1cqh 1cqw;
         justify-content: center;
-        flex: 1 1 50%;
+        flex: 1 0 50cqi;
         font-size: 5cqh;
         font-weight: normal;
         text-align: center;
@@ -482,7 +492,9 @@
         <div id="playingScreen" class="screen screenOff">
            <div id="playingContent" class="playingContent_landscape">
               <div id="albumImageContent" class="albumImageContent">
-                <img id="playingAlbumImage" class="playingAlbumImage"></img>
+                <div id="albumImageBox" class="albumImageBox">
+                  <img id="playingAlbumImage" class="playingAlbumImage"></img>
+                </div>
                  <div id="playingControls" class="playingControls playingItem">
                     <div id="playingPrev" class="playingControl" onclick="uiCmd('prev');">
                        <svg><use xlink:href="#iconPrev"/></svg>
