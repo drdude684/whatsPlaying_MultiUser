@@ -231,7 +231,7 @@ function uiCmd(cmd) {
   var arg = gLastVal.deviceId ? `?device_id=${gLastVal.deviceId}` : null;
 
   if (cmd === 'play') {
-    spotifyApi(gState=='play' ? spotifyRoutes.playPause : spotifyRoutes.playPlay, arg);
+    spotifyApi(gNowPlaying.isPlaying ? spotifyRoutes.playPause : spotifyRoutes.playPlay, arg);
     // TODO: this can cause bounce if we get an update before it actually gets set
     //gNowPlaying.isPlaying = !gNowPlaying.isPlaying;
   } else if (cmd === 'next') {
