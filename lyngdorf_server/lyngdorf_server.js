@@ -16,6 +16,7 @@ var readline = require('readline');
 
 var lastkeyname = '';
 var lastScreenPowerState = true;
+var haveSeenAmpPowerOn = false;
 
 process.stdin.on('keypress', (chunk, key) => {
 	if (key) {
@@ -137,12 +138,12 @@ function setupRoutes(server) {
   server.route({
     method: 'GET',
     path: '/myconfig2.js',
-    handler: { file: { path: h.file(gFileName.config}}
+    handler: { file: { path: gFileName.config}}
   });
   server.route({
     method: 'GET',
     path: '/whatsPlaying2.js',
-    handler: { file: { path: h.file(gFileName.script}}
+    handler: { file: { path: gFileName.script}}
   });
 
   // static assets
@@ -287,8 +288,8 @@ function setScreenPower(state) {
   if (currentStatus.connected) {
     // only fiddle with the screen if there is actually an amp connected
     switch(state) {
-      case true: if (!lastScreenPowerState) { debug('switching screen on'); shell.exec('/usr/local/bin/screen_on.sh');lastScreenPowerState = true};break;
-      case false: if (lastScreenPowerState) { debug('switching screen off'); shell.exec('/usr/local/bin/screen_off.sh');lastScreenPowerState = false};break;
+      case true: haveSeenAmpPowerOn = true;if (!lastScreenPowerState) { debug('switching screen on'); shell.exec('/usr/local/bin/screen_on.sh');lastScreenPowerState = true};break;
+      case false: if (lastScreenPowerState && haveSeenAmpPowerOn) { debug('switching screen off'); shell.exec('/usr/local/bin/screen_off.sh');lastScreenPowerState = false};break;
     }
   }
 }
