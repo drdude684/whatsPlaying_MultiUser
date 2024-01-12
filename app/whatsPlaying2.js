@@ -65,7 +65,7 @@ var gTimer = {
   },
   timeBar: {
     label: "timeBar",
-    callback: updatePayerUi,
+    callback: updatePlayerUi,
     interval: 500,
     lastTic: 0
   },
@@ -156,7 +156,6 @@ async function initialize() {
     event.preventDefault();  // block std handler
   });
 
-
   // get login url
   var res = await getLocal('loginUrl');
   //debug(res);
@@ -164,15 +163,14 @@ async function initialize() {
     gLoginUrl = res.data.url;
 
   var elem = document.getElementById('body');
-  elem.style.cursor = Config.showMouse ? 'auto' : 'none';
-  
+  elem.style.cursor = Config.showMouse ? 'auto' : 'none';  
 
   elem = document.getElementById('loginContent');
   elem.innerHTML = `Log in to Spotify via ${gLoginUrl}`;
 
   elem = document.getElementById('sleepContent');
   elem.innerHTML = `Wake me at<br><br>${gLoginUrl}`;
-  
+    
   // initial update
   updateClock();
   await updateAmp();
@@ -181,9 +179,12 @@ async function initialize() {
   setInterval(timerUpdates, 1000);
   
   updateViewElements(); //initial sizing etc.
-  
-  // always start by showing the clock
-  setState('wait');
+ 
+  if (Config.lyngdorfServer===''){
+    setState('play');
+  } else {
+    setState('wait');
+  }
 }
 
 // -- generic helpers --
@@ -347,7 +348,6 @@ async function updateServer() {
       // fall through
     }
   }
- 
   var curToken = gAccessToken;
   var res = await getLocal('accessToken');
   if (res.error)
@@ -417,7 +417,7 @@ debug(gNowPlaying);
   return res;
 }
 
-function updatePayerUi() {
+function updatePlayerUi() {
   // simulate progress bar between updates
   if (gCurScreen === 'playingScreen')
     updatePlayMeter(gNowPlaying, true);
@@ -582,6 +582,10 @@ async function updateAmpScan() {
     return;
   gLastVal.scanClock = now;
 
+  if (Config.lyngdorfServer===''){
+    return;
+  }
+
   debug('checking amp status');
 
   var res;
@@ -595,7 +599,7 @@ async function updateAmpScan() {
     // if the amp server is in demo mode, enter a pseudo demo mode of our own, where spotify 
     // activity is shown for iPhones associated with the running servers
     debug('setting pseudo demo mode');
-    Config.preferedPlayer='iPhone';
+    Config.preferedPlayer='';
   }
   
   
@@ -806,11 +810,16 @@ async function getPlaybackState() {
         gNowPlaying.type = data.currently_playing_type;  // e.g. 'track'
         gNowPlaying.id = id;                             // track ID
         gNowPlaying.track = track.name;
-        
         gNowPlaying.album = album.name;
-        
         gNowPlaying.artist = getArtistName(track.artists); 
-        
+
+/*
+ * debug(816);
+gNowPlaying.track = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut ';
+gNowPlaying.album = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut ';
+gNowPlaying.artist = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut ';
+debug(gNowPlaying);
+*/        
         gNowPlaying.date = getYearFromDate(album.release_date, album.release_date_precision);
         gNowPlaying.explicit = track.explicit;
         gNowPlaying.popularity = track.popularity;
@@ -1017,7 +1026,7 @@ async function getLocal(route)
 
 async function updateAmp()
 {
-  if (Config.lyngdorfServer==''){
+  if (Config.lyngdorfServer===''){
     // return as if all is well
     ampStatus.power='ON';
     ampStatus.streamType='2';
