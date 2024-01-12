@@ -12,9 +12,9 @@
   "license": "GPL-3.0",
   "dependencies": {
     "@hapi/hapi": "^21.1.0",
-    "@hapi/inert": "^7.0.0",
-    "request": "^2.88.2",
+    "@hapi/inert": "^7.1.0",
     "onoff": "^6.0.3",
+    "request": "^2.88.2",
     "shelljs": "^0.8.5"
   }
 }

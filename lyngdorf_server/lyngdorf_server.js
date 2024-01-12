@@ -63,9 +63,6 @@ const gFileName = {
   homePage: 'lyngdorf_server/public/index.html',
   playPage: 'app/whatsPlaying2.html',
   config: 'app/myconfig2.js',
-  spLogo: 'app/Spotify_Logo_RGB_White.png',
-  tvIcon: 'app/television-icon-white.png',
-  muteIcon: 'app/volume-silent-icon.svg',
   script: 'app/whatsPlaying2.js',
 };
 
@@ -136,33 +133,31 @@ function setupRoutes(server) {
     handler: function (req, h) { return h.file(gFileName.playPage); }
   });
 
-  // control: data for play screen
+  // control: scripts for play screen
   server.route({
     method: 'GET',
     path: '/myconfig2.js',
-    handler: function (req, h) { return h.file(gFileName.config); }
+    handler: { file: { path: h.file(gFileName.config}}
   });
   server.route({
     method: 'GET',
     path: '/whatsPlaying2.js',
-    handler: function (req, h) { return h.file(gFileName.script); }
-  });
-  server.route({
-    method: 'GET',
-    path: '/Spotify_Logo_RGB_White.png',
-    handler: function (req, h) { return h.file(gFileName.spLogo); }
-  });
-  server.route({
-    method: 'GET',
-    path: '/television-icon-white.png',
-    handler: function (req, h) { return h.file(gFileName.tvIcon); }
-  });
-  server.route({
-    method: 'GET',
-    path: '/volume-silent-icon.svg',
-    handler: function (req, h) { return h.file(gFileName.muteIcon); }
+    handler: { file: { path: h.file(gFileName.script}}
   });
 
+  // static assets
+    server.route({
+        method: 'GET',
+        path: '/assets/{param*}',
+        handler: { 
+            directory: {
+                path: 'app/assets',
+                /* redirectToSlash: true,
+                index: true, */
+            }
+        }
+    });
+  
   // control: send status request
   server.route({
     method: 'GET',
@@ -206,8 +201,8 @@ async function run() {
     process.stdin.setRawMode(true);
     
   var server = createServer();
-  setupRoutes(server);
   await server.register(require('@hapi/inert'));  // static file handling
+  setupRoutes(server);
   await server.start();
   debug(`Server running at: ${server.info.uri}`);
   if (Config.demoMode) {
