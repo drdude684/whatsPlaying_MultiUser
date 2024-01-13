@@ -243,7 +243,7 @@
       .playingContent_landscape {
           display: flex;
           flex-direction: row;
-          padding: 2cqh 2cqw;
+          padding: 7cqh 2cqw 2cqh 2cqw;
           justify-content: center;
           align-items: center;
           height: 95cqh;
@@ -256,7 +256,7 @@
       .playingContent_portrait {
           display: flex;
           flex-direction: column;
-          padding: 2cqh 2cqw;
+          padding: 7cqh 2cqw 2cqh 2cqw;
           justify-content: center;
           align-items: center;
           height: 95cqh;
@@ -271,9 +271,9 @@
         flex: 0 0 50cqi;
         flex-direction: column;
         align-items: center;
-        flex: 0 1 min(96cqh,96cqw);
-        width: min(96cqh,96cqw);
-        height: min(96cqh,96cqw);
+        flex: 0 1 min(91cqh,91cqw);
+        width: min(91cqh,91cqw);
+        height: min(91cqh,91cqw);
         container-type: size;
       }
 
@@ -316,38 +316,64 @@
           transition: 0.25s ease-in-out;
       }
 
-      .playingTrack {
+      .playingTrackBox {
         display: flex;
         margin: auto;
         align-items: center;
         justify-content: center;
+        flex: 0 0 56cqh;
+        width: 100%;
+      }
+
+      .playingTrack {
+        display: block;
+        margin: auto;
         font-size: 15cqh;
         font-weight: bolder;
-        height: 56cqh;
+        max-height: 56cqh;
         width: 100%;
         overflow: hidden;
+        -webkit-line-clamp: 1;
+      }
+
+      .playingArtistBox {
+        display: flex;
+        margin: auto;
+        align-items: center;
+        justify-content: center;
+        flex: 0 0 16cqh;
+        width: 100%;
       }
 
       .playingArtist {
-        display: flex;
+        display: block;
         margin: auto;
-        justify-content: center;
         font-size: 14cqh;
         font-weight: normal;
-        height: 16cqh;
+        max-height: 16cqh;
         width: 100%;
         overflow: hidden;
+        -webkit-line-clamp: 1;
       }
 
-      .playingAlbum {
+      .playingAlbumBox {
         display: flex;
         margin: auto;
         align-items: center;
         justify-content: center;
+        flex: 0 0 16cqh;
+        width: 100%;
+      }
+
+      .playingAlbum {
+        display: block;
+        margin: auto;
         font-size:6cqh;
-        height: 14cqh;
+        font-weight: normal;
+        max-height: 14cqh;
         width: 100%;
         overflow: hidden;
+        -webkit-line-clamp: 1;
       }
 
       .playingDate {
@@ -360,7 +386,7 @@
         /* align-items: center; */
         justify-content: left;
         height: 5cqh;
-        font-size: 4cqh;
+        font-size: 3.5cqh;
         padding: 0 2cqw;
         /* line-height: 60%; */
       }
@@ -511,7 +537,9 @@
               </div>
                  
               <div class="playingInfo">
-                 <div id="playingTrack" class="playingTrack playingItem"></div>
+                 <div id="playingTrackBox" class="playingTrackBox">
+                   <div id="playingTrack" class="playingTrack playingItem"></div>
+                 </div>
                  <div id="playingArtist" class="playingArtist playingItem"></div>
                  <div id="playingAlbum" class="playingAlbum playingItem"></div>
 <!--                 <div id="playingDate" class="playingDate playingItem"></div> -->

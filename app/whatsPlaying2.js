@@ -230,36 +230,21 @@ function format(string, args) {
 function uiCmd(cmd) {
 
   var arg = gLastVal.deviceId ? `?device_id=${gLastVal.deviceId}` : null;
-
-/*
- *   if (cmd === 'play') {
-    spotifyApi(gNowPlaying.isPlaying ? spotifyRoutes.playPause : spotifyRoutes.playPlay, arg);
-  } else if (cmd === 'next') {
-    spotifyApi(spotifyRoutes.playNext, arg);
-  } else if (cmd === 'prev') {
-    spotifyApi(spotifyRoutes.playPrev, arg);
-  } else {
-    return;
-  }
-  
-  */
-  
-  debug(cmd);
-  
   switch(cmd) {
     case 'play':           spotifyApi(gNowPlaying.isPlaying ? spotifyRoutes.playPause : spotifyRoutes.playPlay, arg);break;
     case 'next':           spotifyApi(spotifyRoutes.playNext, arg);break;
     case 'prev':           spotifyApi(spotifyRoutes.playPrev, arg);break;
     case 'toggleControls': showPlayControls(!Config.showPlayControls); break;
-  }   
-
-  /*
-   * // bump up the refresh rate until we get a change
+  }
+  
+  updatePlayback();
+  
+  // bump up the refresh rate until we get a change
   gTimer.playback.nextInterval = 3000;
   gTimer.playback.interval = 500;
   gTimer.playback.count = 0;
   gNowPlaying.expectingChange = 10;  // max count fallback
-  */
+  
 }
 
 function handleError(err) {
@@ -381,7 +366,7 @@ async function updateServer() {
 
 async function updatePlayback() {
   var res;
-
+  
   if (!gAccessToken || gState=='sleep' || gState=='wait')
     return;
 
@@ -436,6 +421,8 @@ function updatePlayerUi() {
     gLastVal.isPlaying = gNowPlaying.isPlaying;
     var elem = document.getElementById('playingPlay');
     changeSvgIcon(elem.children[0], gLastVal.isPlaying ? 'iconPause' : 'iconPlay')
+    elem = document.getElementById('playingMeterValue');
+    elem.style.background = (gLastVal.isPlaying ? 'teal' : 'maroon');
   }
 
   
@@ -856,14 +843,6 @@ async function getPlaybackState() {
         gNowPlaying.track = track.name;
         gNowPlaying.album = album.name;
         gNowPlaying.artist = getArtistName(track.artists); 
-
-/*
- * debug(816);
-gNowPlaying.track = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut ';
-gNowPlaying.album = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut ';
-gNowPlaying.artist = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut ';
-debug(gNowPlaying);
-*/        
         gNowPlaying.date = getYearFromDate(album.release_date, album.release_date_precision);
         gNowPlaying.explicit = track.explicit;
         gNowPlaying.popularity = track.popularity;
