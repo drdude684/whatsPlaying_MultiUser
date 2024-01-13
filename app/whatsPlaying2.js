@@ -55,6 +55,8 @@ var gPlayerId;  // store this from last call
 
 var ampStatus = {power:'Undefined',volume:'undefined',sourceIndex:'Unknown',sourceName:'Unknown',mute:'Unknown',streamType:'Unknown'}; // status of associated lyngdorf device
 
+var gUiInfo = {playMeterBackgroundPlay: 'teal', playMeterBackgroundPause: 'maroon'};
+
 // run single setInterval timer and handle our own timers manually in that
 var gTimer = {
   clock: {
@@ -170,7 +172,7 @@ async function initialize() {
 
   elem = document.getElementById('sleepContent');
   elem.innerHTML = `Wake me at<br><br>${gLoginUrl}`;
-    
+
   // initial update
   updateClock();
   await updateAmp();
@@ -422,7 +424,7 @@ function updatePlayerUi() {
     var elem = document.getElementById('playingPlay');
     changeSvgIcon(elem.children[0], gLastVal.isPlaying ? 'iconPause' : 'iconPlay')
     elem = document.getElementById('playingMeterValue');
-    elem.style.background = (gLastVal.isPlaying ? 'teal' : 'maroon');
+    elem.style.background = (gLastVal.isPlaying ? gUiInfo.playMeterBackgroundPlay : gUiInfo.playMeterBackgroundPause);
   }
 
   
