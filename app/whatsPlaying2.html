@@ -430,6 +430,20 @@
           fill: white;
       }
 
+      .playListInfo {
+        display: none;
+        flex-direction: column;
+        padding: 0 4cqw;
+        flex: 1 0 50cqi;
+        font-size: 5cqh;
+        font-weight: normal;
+        container-type: size;
+        height: 100%;
+        width: 100%;
+        background-image: linear-gradient(to bottom left, teal, black);
+        overflow:hidden;
+      }
+
    </style>
 </head>
 
@@ -536,7 +550,7 @@
                  </div>
               </div>
                  
-              <div class="playingInfo">
+              <div id="playingInfo" class="playingInfo" onclick="uiCmd('togglePlayInfo');">
                  <div id="playingTrackBox" class="playingTrackBox">
                    <div id="playingTrack" class="playingTrack playingItem"></div>
                  </div>
@@ -548,6 +562,8 @@
                     <span id="playingMeterValue"></span>
                  </div>
 
+              </div>
+              <div id="playListInfo" class="playListInfo" onclick="uiCmd('togglePlayInfo');">
               </div>
            </div>
 

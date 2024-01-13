@@ -17,6 +17,7 @@ const spotifyRoutes = {
   getPlaylistImage: {type: 'GET', url: 'playlists/{0}/images'},  // + playlist_id
   getArtist: {type: 'GET', url: 'artists/{0}'},  // + artist_id
   getDevices: {type: 'GET', url: 'me/player/devices'},
+  getQueue: {type: 'GET', url: 'me/player/queue'},
   playPlay: {type: 'PUT', url: 'me/player/play{0}'},
   playPause: {type: 'PUT', url: 'me/player/pause{0}'},
   playNext: {type: 'POST', url: 'me/player/next{0}'},
@@ -55,7 +56,7 @@ var gPlayerId;  // store this from last call
 
 var ampStatus = {power:'Undefined',volume:'undefined',sourceIndex:'Unknown',sourceName:'Unknown',mute:'Unknown',streamType:'Unknown'}; // status of associated lyngdorf device
 
-var gUiInfo = {playMeterBackgroundPlay: 'teal', playMeterBackgroundPause: 'maroon'};
+var gUiInfo = {playMeterBackgroundPlay: 'teal', playMeterBackgroundPause: 'maroon', playListLinesCalculated: false, playListLines: 1};
 
 // run single setInterval timer and handle our own timers manually in that
 var gTimer = {
@@ -173,6 +174,8 @@ async function initialize() {
   elem = document.getElementById('sleepContent');
   elem.innerHTML = `Wake me at<br><br>${gLoginUrl}`;
 
+  gUiInfo.showPlayInfo = true;
+  
   // initial update
   updateClock();
   await updateAmp();
@@ -237,6 +240,7 @@ function uiCmd(cmd) {
     case 'next':           spotifyApi(spotifyRoutes.playNext, arg);break;
     case 'prev':           spotifyApi(spotifyRoutes.playPrev, arg);break;
     case 'toggleControls': showPlayControls(!Config.showPlayControls); break;
+    case 'togglePlayInfo': showPlayInfo(!gUiInfo.showPlayInfo);break;
   }
   
   updatePlayback();
@@ -313,6 +317,7 @@ function activateClock(){
 
 function activatePlay(){
 	selectScreen('playingScreen');
+  calculatePlayListLines();
 }
 
 function activateTv(){
@@ -532,8 +537,6 @@ async function updateScanning() {
 	  return;
   }
 */
-
-debug(551);
   if((ampStatus.sourceIndex!='8')&&(Config.lyngdorfServer!=='')){
 	  debug('Amplifier input not set to Spotify, so we skip asking Spotify anything');
 	  scanMessageElement = document.getElementById('scanningContent');
@@ -543,7 +546,6 @@ debug(551);
 	  return;
   }
 
-    
   var now = new Date();
   if (now == gLastVal.scanClock)
     return;
@@ -679,6 +681,17 @@ function showPlayMeter(show) {
   var elem = document.getElementById('playingMeter');
   elem.style.opacity = show ? '1' : '0';
 }
+
+function showPlayInfo(show) {
+  if (gUiInfo.showPlayInfo == show)
+    return;
+  var elem = document.getElementById('playingInfo');
+  elem.style.display = show ? 'flex' : 'none';
+  var elem = document.getElementById('playListInfo');
+  elem.style.display = show ? 'none' : 'flex';
+  gUiInfo.showPlayInfo = show;
+}
+
 
 function updatePlayMeter(data, interpolate) {
   if (!data || !data.isPlaying)
@@ -839,7 +852,7 @@ async function getPlaybackState() {
             playlist = pl.data.name;
           }
         }
-
+        
         gNowPlaying.type = data.currently_playing_type;  // e.g. 'track'
         gNowPlaying.id = id;                             // track ID
         gNowPlaying.track = track.name;
@@ -851,6 +864,20 @@ async function getPlaybackState() {
         gNowPlaying.playlist = playlist;
         gNowPlaying.albumImage = getAlbumImage(album.images);
         gNowPlaying.duration = track.duration_ms;
+
+        // get queue
+        gNowPlaying.queue = await getQueue();
+        if (gNowPlaying.queue.length >0 ) {
+          var newInnerHTML='<ol onclick="playQueueItem(event.target)">';
+          for (item of gNowPlaying.queue) {
+            //debug(item.track);
+            newInnerHTML = newInnerHTML+'<li>'+item.track+'</li>\r\n';            
+          }          
+          newInnerHTML = newInnerHTML+'</ol>\r\n';
+          var elem=document.getElementById('playListInfo');
+          elem.innerHTML = newInnerHTML;
+        }
+
       }
     }
 
@@ -991,6 +1018,39 @@ async function getTopTracks(count = 10, range = 'medium_term') {
   return {data: list};
 }
 
+async function getQueue() {
+  var res = await spotifyApi(spotifyRoutes.getQueue);
+  if (res.error)
+    return res;
+
+  var list = [];
+  var data = res.data;
+
+  if (data && data.queue) {
+    var items = data.queue;
+    for (var i = 0; i < items.length; i++) {
+      var track = items[i];
+      var album = track.album;
+
+      var entry = {};
+      entry.type = track.type;  // e.g. 'track'
+      entry.id = track.uri;     // track ID
+      entry.track = track.name;
+      entry.album = album.name;
+      entry.artist = getArtistName(track.artists);
+      entry.date = getYearFromDate(album.release_date, album.release_date_precision);
+      entry.explicit = track.explicit;
+      entry.popularity = track.popularity;
+      entry.albumImage = getAlbumImage(album.images, false);
+      entry.duration = track.duration_ms;
+
+      list.push(entry);
+    }
+  }
+
+  return list;
+}
+
 async function spotifyApiDirect(type, route) {
   if (!gAccessToken) {
     return {error: 'login'};
@@ -1029,7 +1089,6 @@ async function spotifyApi(route, ...args) {
   
   return spotifyApiDirect(type, baseUri + url);
 }
-
 
 async function getLocal(route)
 {
@@ -1114,6 +1173,25 @@ function setState(requestedState, data)
 	}
 }
 
+function calculatePlayListLines() {
+    
+  if (gUiInfo.playListLinesCalculated)
+    return;
+  var pi=gUiInfo.showPlayInfo;
+  showPlayInfo(false);
+  var elem =  document.getElementById('playListInfo'); 
+  elem.innerHTML='A<br>\r\nA<br>\r\nA<br>\r\nA<br>\r\nA<br>\r\nA<br>\r\nA<br>\r\nA<br>\r\nA<br>\r\nA<br>\r\nA<br>\r\nA<br>\r\nA<br>\r\nA<br>\r\nA<br>\r\nA<br>\r\nA<br>\r\nA<br>\r\nA<br>\r\nA<br>\r\nA<br>\r\nA<br>\r\nA<br>\r\nA<br>\r\nA<br>\r\n';
+  var computedFontSize = parseInt(window.getComputedStyle(elem).fontSize);
+  if ((computedFontSize>0)&&(elem.offsetHeight>0)) {
+    gUiInfo.PlayListLines = Math.floor(elem.offsetHeight/(computedFontSize*1.2));
+    debug('# play list lines: '+gUiInfo.PlayListLines);
+    gUiInfo.playListLinesCalculated = true;
+  }
+  elem.innerHTML='';
+  showPlayInfo(pi);
+}
+
+
 function updateViewElements () {
   if (document.documentElement.clientWidth>document.documentElement.clientHeight) {
     var elem = document.getElementById("playingContent");
@@ -1124,10 +1202,62 @@ function updateViewElements () {
     removeClass(elem, 'playingContent_landscape');
     addClass(elem, 'playingContent_portrait');
   }
+  
+  calculatePlayListLines();
+  showPlayInfo(gUiInfo.showPlayInfo);
+ 
   updatePlayingScreen(gNowPlaying); 
 
 }
 
 window.addEventListener('resize', function(event){
+ gUiInfo.playListLinesCalculated = false;
  updateViewElements(); 
 });
+
+async function playQueueItem(track) {
+  
+  var timeOut=1000;
+  
+  track=String(track.outerHTML);
+  if (track.substring(0,4)!=='<li>') {
+    debug('not a valid track item to jump to');
+    return;
+  }
+  track=track.substring(4,track.length-5);
+  debug('jumping to queue item: '+track);
+  var index=0;
+  for (item of gNowPlaying.queue) {    
+    ++index;
+    debug(item.track);
+    if(item.track===track) {
+      debug('found it! ' + index);
+      break;
+    }
+  }         
+  
+  var arg = gLastVal.deviceId ? `?device_id=${gLastVal.deviceId}` : null;
+  var res;
+  for(let i=0;i<index;++i) {
+    debug('skipping ('+(i+1)+'/'+index+')');
+    var errCount=0;
+    do {
+      res = await spotifyApi(spotifyRoutes.playNext, arg);   
+      debug('>>> (now playing: '+gNowPlaying.track+')');
+      if (res.error) {
+        debug('error occured while skipping, retrying');
+        await new Promise(r => setTimeout(r, timeOut));
+      }
+    } while (res.error&&(errCount<3));
+
+    if( errCount >= 3) {
+      debug('could not skip to requested entry, aborting');
+      //setState('error',res);
+      return;
+    }
+    
+    await new Promise(r => setTimeout(r, timeOut));    
+  }   
+  
+}
+
