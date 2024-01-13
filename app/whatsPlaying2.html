@@ -243,6 +243,7 @@
       .playingContent_landscape {
           display: flex;
           flex-direction: row;
+          gap: 2cqi;
           padding: 7cqh 2cqw 2cqh 2cqw;
           justify-content: center;
           align-items: center;
@@ -256,6 +257,7 @@
       .playingContent_portrait {
           display: flex;
           flex-direction: column;
+          gap: 2cqi;
           padding: 7cqh 2cqw 2cqh 2cqw;
           justify-content: center;
           align-items: center;
@@ -431,17 +433,30 @@
       }
 
       .playListInfo {
-        display: none;
+        display: flex;
         flex-direction: column;
-        padding: 0 4cqw;
+        padding: 2cqh 2cqw;
         flex: 1 0 50cqi;
         font-size: 5cqh;
         font-weight: normal;
+        text-align: left;
         container-type: size;
         height: 100%;
         width: 100%;
         background-image: linear-gradient(to bottom left, teal, black);
+      }
+
+      .playListBox {
+        display: block;
+        padding: 2cqh 2cqw 2cqh 2em;
+        font-size: 5cqh;
+        font-weight: normal;
+        text-align: left;
+        container-type: size;
+        height: 80%;
+        width: 100%;
         overflow:hidden;
+        white-space: nowrap;
       }
 
    </style>
@@ -564,6 +579,8 @@
 
               </div>
               <div id="playListInfo" class="playListInfo" onclick="uiCmd('togglePlayInfo');">
+                <div id="playListBox" class="playListBox">
+                </div>
               </div>
            </div>
 

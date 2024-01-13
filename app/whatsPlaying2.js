@@ -869,12 +869,14 @@ async function getPlaybackState() {
         gNowPlaying.queue = await getQueue();
         if (gNowPlaying.queue.length >0 ) {
           var newInnerHTML='<ol onclick="playQueueItem(event.target)">';
+          var count=0;
           for (item of gNowPlaying.queue) {
             //debug(item.track);
-            newInnerHTML = newInnerHTML+'<li>'+item.track+'</li>\r\n';            
+            if (++count < gUiInfo.playListLines) // should count actual lines, not entries
+              newInnerHTML = newInnerHTML+'<li>'+item.track+'</li>\r\n';            
           }          
           newInnerHTML = newInnerHTML+'</ol>\r\n';
-          var elem=document.getElementById('playListInfo');
+          var elem=document.getElementById('playListBox');
           elem.innerHTML = newInnerHTML;
         }
 
@@ -1055,7 +1057,6 @@ async function spotifyApiDirect(type, route) {
   if (!gAccessToken) {
     return {error: 'login'};
   }
-
   try {
     var res = await fetch(route, {method: type, headers: {Authorization: 'Bearer ' + gAccessToken, Accept: 'application/json', 'Content-Type': 'application/json'}});
 
@@ -1179,12 +1180,12 @@ function calculatePlayListLines() {
     return;
   var pi=gUiInfo.showPlayInfo;
   showPlayInfo(false);
-  var elem =  document.getElementById('playListInfo'); 
+  var elem =  document.getElementById('playListBox'); 
   elem.innerHTML='A<br>\r\nA<br>\r\nA<br>\r\nA<br>\r\nA<br>\r\nA<br>\r\nA<br>\r\nA<br>\r\nA<br>\r\nA<br>\r\nA<br>\r\nA<br>\r\nA<br>\r\nA<br>\r\nA<br>\r\nA<br>\r\nA<br>\r\nA<br>\r\nA<br>\r\nA<br>\r\nA<br>\r\nA<br>\r\nA<br>\r\nA<br>\r\nA<br>\r\n';
   var computedFontSize = parseInt(window.getComputedStyle(elem).fontSize);
   if ((computedFontSize>0)&&(elem.offsetHeight>0)) {
-    gUiInfo.PlayListLines = Math.floor(elem.offsetHeight/(computedFontSize*1.2));
-    debug('# play list lines: '+gUiInfo.PlayListLines);
+    gUiInfo.playListLines = Math.floor(elem.offsetHeight/(computedFontSize*1.2));
+    debug('# play list lines: ' + gUiInfo.playListLines);
     gUiInfo.playListLinesCalculated = true;
   }
   elem.innerHTML='';
@@ -1255,7 +1256,7 @@ async function playQueueItem(track) {
       //setState('error',res);
       return;
     }
-    
+        
     await new Promise(r => setTimeout(r, timeOut));    
   }   
   
