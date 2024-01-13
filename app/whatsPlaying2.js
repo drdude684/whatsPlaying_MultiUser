@@ -181,7 +181,7 @@ async function initialize() {
   updateViewElements(); //initial sizing etc.
  
   if (Config.lyngdorfServer===''){
-    setState('play');
+    setState('scan');
   } else {
     setState('wait');
   }
@@ -231,7 +231,8 @@ function uiCmd(cmd) {
 
   var arg = gLastVal.deviceId ? `?device_id=${gLastVal.deviceId}` : null;
 
-  if (cmd === 'play') {
+/*
+ *   if (cmd === 'play') {
     spotifyApi(gNowPlaying.isPlaying ? spotifyRoutes.playPause : spotifyRoutes.playPlay, arg);
   } else if (cmd === 'next') {
     spotifyApi(spotifyRoutes.playNext, arg);
@@ -240,12 +241,25 @@ function uiCmd(cmd) {
   } else {
     return;
   }
+  
+  */
+  
+  debug(cmd);
+  
+  switch(cmd) {
+    case 'play':           spotifyApi(gNowPlaying.isPlaying ? spotifyRoutes.playPause : spotifyRoutes.playPlay, arg);break;
+    case 'next':           spotifyApi(spotifyRoutes.playNext, arg);break;
+    case 'prev':           spotifyApi(spotifyRoutes.playPrev, arg);break;
+    case 'toggleControls': showPlayControls(!Config.showPlayControls); break;
+  }   
 
-  // bump up the refresh rate until we get a change
+  /*
+   * // bump up the refresh rate until we get a change
   gTimer.playback.nextInterval = 3000;
   gTimer.playback.interval = 500;
   gTimer.playback.count = 0;
   gNowPlaying.expectingChange = 10;  // max count fallback
+  */
 }
 
 function handleError(err) {
@@ -355,11 +369,7 @@ async function updateServer() {
   else
     gAccessToken = res.data.token;
   if (curToken == null && gAccessToken != null) {  // switch away from error condition
-    res = await getInitialPlaybackState();
-    if (!res.error){
-      //setState('play');
-      // should check whether this behavior is still required now that we are running via a state machine
-    }
+    setState('scan'); // not 100% sure this is the behaviour we should want
   }
 
   if(res.error) {
@@ -400,8 +410,8 @@ async function getInitialPlaybackState() {
   if (res.error)
     return res;
   if (!gNowPlaying.id) {  // nothing playing, show most recent
-debug('nothing playing yet, fetching most recent');
-debug(gNowPlaying);
+    debug('nothing playing yet, fetching most recent');
+    debug(gNowPlaying);
     res = await getRecentlyPlayed();
     if (res.error)
       return res;
@@ -514,10 +524,12 @@ async function reinitialize() {
   // initial update
   await updateClock();
   await updateServer();
-  await getInitialPlaybackState();
+//  await getInitialPlaybackState();
 }
 	
 async function updateScanning() {
+/*
+ * 
   if (Config.preferedPlayer===''){
 	  setState('play');
 	  return;
@@ -530,6 +542,18 @@ async function updateScanning() {
 	  scanMessageElement.innerHTML = 'Amp input: '+ampStatus.sourceName;
 	  return;
   }
+*/
+
+debug(551);
+  if((ampStatus.sourceIndex!='8')&&(Config.lyngdorfServer!=='')){
+	  debug('Amplifier input not set to Spotify, so we skip asking Spotify anything');
+	  scanMessageElement = document.getElementById('scanningContent');
+	  scanMessageElement.innerHTML = 'Spotify not active on amplifier';
+	  scanMessageElement = document.getElementById('scanningContent2');
+	  scanMessageElement.innerHTML = 'Amp input: '+ampStatus.sourceName;
+	  return;
+  }
+
     
   var now = new Date();
   if (now == gLastVal.scanClock)
@@ -541,30 +565,49 @@ async function updateScanning() {
   
   gLastVal.scanClock = now;
   
-  var scanMessage='scanning server '+gCurrentServer+' for the activation of a device named \"'+Config.preferedPlayer+'\"';
+  var scanMessage;
 
   var res = await spotifyApi(spotifyRoutes.playbackState);
   if (res.error) {
-	setState('error',res);
+	  setState('error',res);
     return;
   }
+  
   var data = res.data;
 
-  if ( data == null ) {
-  } else {
-    if (data.device) {
-	  scanMessage=scanMessage+', found: '+data.device.name;
-      if (data.device.name===Config.preferedPlayer){
+  if(Config.preferedPlayer!=='') {
+    scanMessage='scanning server '+gCurrentServer+' for the activation of a device named \"'+Config.preferedPlayer+'\"';    
+    if ( data != null ) {
+      if (data.device) {
+        scanMessage=scanMessage+', found: '+data.device.name;
+        if (data.device.name===Config.preferedPlayer){
+          if (data.is_playing) {
+            debug('scan result positive: found server ('+gCurrentServer+') streaming to prefered device '+data.device.name);
+            gNowScanning=false;	
+            reinitialize();
+            setState('play');
+          }
+          else
+            debug('scan result negative: found server ('+gCurrentServer+') set to stream to prefered device '+data.device.name+', but not yet playing');
+      } else
+          debug('scan result negative: found server ('+gCurrentServer+') streaming to non-prefered device '+data.device.name);
+      }
+    }
+  } else
+  {
+    scanMessage='scanning server '+gCurrentServer+' for Spotify activity';
+    if ( data != null ) {
+      if (data.device) {
+        scanMessage=scanMessage+', found: '+data.device.name;
         if (data.is_playing) {
-          debug('scan result positive: found server ('+gCurrentServer+') streaming to prefered device '+data.device.name);
+          debug('scan result positive: found server ('+gCurrentServer+') streaming to device '+data.device.name);
           gNowScanning=false;	
           reinitialize();
           setState('play');
         }
         else
-          debug('scan result negative: found server ('+gCurrentServer+') set to stream to prefered device '+data.device.name+', but not yet playing');
-	  } else
-        debug('scan result negative: found server ('+gCurrentServer+') streaming to non-prefered device '+data.device.name);
+          debug('scan result negative: found server ('+gCurrentServer+') set to stream to device '+data.device.name+', but not yet playing');
+        }
     }
   }
   scanMessageElement = document.getElementById('scanningContent');
@@ -640,6 +683,7 @@ async function updateAmpScan() {
 function showPlayControls(show) {
   var elem = document.getElementById('playingControls');
   elem.style.display = show ? 'flex' : 'none';
+  Config.showPlayControls = show;
 }
 
 function showPlayMeter(show) {
