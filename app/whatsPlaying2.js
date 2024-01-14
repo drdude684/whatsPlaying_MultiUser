@@ -190,6 +190,7 @@ async function initialize() {
   } else {
     setState('wait');
   }
+  
 }
 
 // -- generic helpers --
@@ -197,7 +198,13 @@ async function initialize() {
 function debug(msg) {
   if (!Config.debug)
     return;
-  console.log(msg);
+    
+  if (typeof(msg)=='string') {
+    const match = RegExp('\\d+/(.*:\\d+:\\d+)').exec(new Error().stack.split("\n")[1])[1]; // this works for Safari on MacOS
+    console.log(match+' : '+msg);
+  } else {
+    console.log(msg);
+  }
 }
 
 function hasClass(elem, className) { return elem.classList.contains(className); }
@@ -235,10 +242,12 @@ function format(string, args) {
 function uiCmd(cmd) {
 
   var arg = gLastVal.deviceId ? `?device_id=${gLastVal.deviceId}` : null;
+  
   //temporarily disable those timers that could generate API queries
   
   var prevTimerBlockList=gTimerBlockList;
-  gTimerBlockList = ["server","playback","scanning","timeBar"];
+  //gTimerBlockList = ["server","playback","scanning","timeBar"];
+  gTimerBlockList = ["server","scanning","timeBar"];
   
   switch(cmd) {
     case 'play':           spotifyApi(gNowPlaying.isPlaying ? spotifyRoutes.playPause : spotifyRoutes.playPlay, arg);break;
@@ -254,7 +263,7 @@ function uiCmd(cmd) {
   
   // bump up the refresh rate until we get a change
   gTimer.playback.nextInterval = 3000;
-  gTimer.playback.interval = 500;
+  gTimer.playback.interval = 250;
   gTimer.playback.count = 0;
   gNowPlaying.expectingChange = 10;  // max count fallback
   
