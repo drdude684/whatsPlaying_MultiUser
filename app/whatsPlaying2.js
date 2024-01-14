@@ -39,7 +39,7 @@ var gLastVal = {playPerc: -1, deviceId: 'unknown device'};  // cache of previous
 var gNowScanning = false;
 var gState = 'init';
 var gLastState = 'init';
-const gStateTimerMap = new Map([
+var gStateTimerMap = new Map([
   ["wait",  new Map([["clock",1],["timeBar",0],["server",0],["playback",0],["scanning",0],["ampScan",1]])],
   ["scan",  new Map([["clock",1],["timeBar",0],["server",1],["playback",0],["scanning",1],["ampScan",1]])],
   ["play",  new Map([["clock",1],["timeBar",1],["server",1],["playback",1],["scanning",0],["ampScan",1]])],
@@ -48,7 +48,7 @@ const gStateTimerMap = new Map([
   ["error", new Map([["clock",1],["timeBar",0],["server",0],["playback",0],["scanning",0],["ampScan",1]])],
   ["login", new Map([["clock",1],["timeBar",0],["server",0],["playback",0],["scanning",0],["ampScan",1]])],
 ]);
-var gTimerMap=gStateTimerMap.get("wait");
+var gTimerBlockList=[];
 var gCurrentServer = 0;
 
 var gAccessToken;  // store this from last call, but null on error
@@ -235,6 +235,11 @@ function format(string, args) {
 function uiCmd(cmd) {
 
   var arg = gLastVal.deviceId ? `?device_id=${gLastVal.deviceId}` : null;
+  //temporarily disable those timers that could generate API queries
+  
+  var prevTimerBlockList=gTimerBlockList;
+  gTimerBlockList = ["server","playback","scanning","timeBar"];
+  
   switch(cmd) {
     case 'play':           spotifyApi(gNowPlaying.isPlaying ? spotifyRoutes.playPause : spotifyRoutes.playPlay, arg);break;
     case 'next':           spotifyApi(spotifyRoutes.playNext, arg);break;
@@ -243,6 +248,8 @@ function uiCmd(cmd) {
     case 'togglePlayInfo': showPlayInfo(!gUiInfo.showPlayInfo);break;
   }
   
+  gTimerBlockList=prevTimerBlockList;
+
   updatePlayback();
   
   // bump up the refresh rate until we get a change
@@ -298,12 +305,14 @@ function timerUpdates() {
   var now = Date.now();
   for (t in gTimer) {
     var timer = gTimer[t];
-    if (gStateTimerMap.get(gState).get(timer.label)){
-		if (now >= timer.lastTic + timer.interval) {
-		  timer.count = timer.count + 1;
-		  timer.callback();
-		  timer.lastTic = now;
-	  }
+    if (!gTimerBlockList.includes(timer.label)) {
+      if (gStateTimerMap.get(gState).get(timer.label)){
+        if (now >= timer.lastTic + timer.interval) {
+          timer.count = timer.count + 1;
+          timer.callback();
+          timer.lastTic = now;
+        }
+      }
     }
   }
 }
@@ -1218,7 +1227,7 @@ window.addEventListener('resize', function(event){
 
 async function playQueueItem(track) {
   
-  var timeOut=1000;
+  var timeOut=50;
   
   track=String(track.outerHTML);
   if (track.substring(0,4)!=='<li>') {
@@ -1227,6 +1236,9 @@ async function playQueueItem(track) {
   }
   track=track.substring(4,track.length-5);
   debug('jumping to queue item: '+track);
+  
+  // find which item to jump to
+  
   var index=0;
   for (item of gNowPlaying.queue) {    
     ++index;
@@ -1236,6 +1248,20 @@ async function playQueueItem(track) {
       break;
     }
   }         
+  
+  if (index==gNowPlaying.queue.length) {
+    debug('could not find track index, aborting');
+    return;
+  }
+  
+  // now skip to relevant track
+  
+  //temporarily disable those timers that could generate API queries
+  
+  var prevTimerBlockList=gTimerBlockList;
+  gTimerBlockList = ["server","playback","scanning","timeBar"];
+  
+  // now start skipping
   
   var arg = gLastVal.deviceId ? `?device_id=${gLastVal.deviceId}` : null;
   var res;
@@ -1254,11 +1280,14 @@ async function playQueueItem(track) {
     if( errCount >= 3) {
       debug('could not skip to requested entry, aborting');
       //setState('error',res);
+      gStateTimerMap=gOldStateTimerMap;
       return;
     }
         
     await new Promise(r => setTimeout(r, timeOut));    
   }   
   
+  //return things to as they were
+  gTimerBlockList = prevTimerBlockList;
 }
 
