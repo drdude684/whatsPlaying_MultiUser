@@ -1321,6 +1321,7 @@ const resizeText = ({ element, parent }) => {
 
   while (!overflow && i < maxSize) {
     element.style.fontSize = `${i}px`
+    debug(i+': '+parent.scrollHeight+' > '+parent.clientHeight);
     overflow = isOverflown(parent)
     if (!overflow) i++
   }
