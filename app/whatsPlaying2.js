@@ -200,8 +200,13 @@ function debug(msg) {
     return;
     
   if (typeof(msg)=='string') {
-    const match = RegExp('\\d+/(.*:\\d+:\\d+)').exec(new Error().stack.split("\n")[1])[1]; // this works for Safari on MacOS
-    console.log(match+' : '+msg);
+    try {
+      const match1 = RegExp('\\d+/(.*:\\d+:\\d+)').exec(new Error().stack.split("\n")[1])[1]; // this works for Safari on MacOS
+      const match2 = RegExp('\\d+/(.*:\\d+:\\d+)').exec(new Error().stack.split("\n")[2])[1]; // this works for Safari on MacOS
+      console.log(match2+' -> '+match1+' : '+msg);
+    } catch(e) {
+      console.log(msg);
+    }
   } else {
     console.log(msg);
   }
@@ -336,6 +341,9 @@ function activateClock(){
 function activatePlay(){
 	selectScreen('playingScreen');
   calculatePlayListLines();
+  resizeText({element: document.querySelector('.playingTrack'), parent: document.querySelector('.playingTrackContainer')});
+  resizeText({element: document.querySelector('.playingArtist'), parent: document.querySelector('.playingArtistContainer')});
+  resizeText({element: document.querySelector('.playingAlbum'), parent: document.querySelector('.playingAlbumContainer')});
 }
 
 function activateTv(){
@@ -746,6 +754,7 @@ function updatePlayingScreen(data) {
   setText('playingArtist', data.artist);
   setText('playingDate', data.date);
   setText('playingPlaylist', data.playlist);
+  
   updatePlayMeter(gNowPlaying);
 
   if (data.albumImage != gLastVal.albumImage) {
@@ -1223,6 +1232,9 @@ function updateViewElements () {
   }
   
   calculatePlayListLines();
+  resizeText({element: document.querySelector('.playingTrack'), parent: document.querySelector('.playingTrackContainer')});
+  resizeText({element: document.querySelector('.playingArtist'), parent: document.querySelector('.playingArtistContainer')});
+  resizeText({element: document.querySelector('.playingAlbum'), parent: document.querySelector('.playingAlbumContainer')});
   showPlayInfo(gUiInfo.showPlayInfo);
  
   updatePlayingScreen(gNowPlaying); 
@@ -1300,3 +1312,20 @@ async function playQueueItem(track) {
   gTimerBlockList = prevTimerBlockList;
 }
 
+const isOverflown = ({ clientHeight, scrollHeight }) => scrollHeight > clientHeight
+const resizeText = ({ element, parent }) => {
+  debug('resizing: '+parent.scrollHeight+' > '+parent.clientHeight);
+  let i = 12 // let's start with 12px
+  let overflow = false
+  const maxSize = 128 // very huge text size
+
+  while (!overflow && i < maxSize) {
+    element.style.fontSize = `${i}px`
+    overflow = isOverflown(parent)
+    if (!overflow) i++
+  }
+
+  // revert to last state where no overflow happened:
+  element.style.fontSize = `${i - 1}px`
+  debug('result: '+parent.scrollHeight+' > '+parent.clientHeight);
+}
