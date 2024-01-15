@@ -447,12 +447,12 @@ function updatePlayerUi() {
   if (gCurScreen === 'playingScreen')
     updatePlayMeter(gNowPlaying, true);
 
-
-  if (gLastVal.isPlaying != gNowPlaying.isPlaying) {
-
+debug(450);
     resizeText({element: document.querySelector('.playingTrack'), parent: document.querySelector('.playingTrackContainer')});
     resizeText({element: document.querySelector('.playingArtist'), parent: document.querySelector('.playingArtistContainer')});
     resizeText({element: document.querySelector('.playingAlbum'), parent: document.querySelector('.playingAlbumContainer')});
+
+  if (gLastVal.isPlaying != gNowPlaying.isPlaying) {
 
     gLastVal.isPlaying = gNowPlaying.isPlaying;
     var elem = document.getElementById('playingPlay');
