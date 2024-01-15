@@ -1312,21 +1312,22 @@ async function playQueueItem(track) {
   gTimerBlockList = prevTimerBlockList;
 }
 
-const isOverflown = ({ clientHeight, scrollHeight }) => scrollHeight > clientHeight
+const isOverflown = ({ clientHeight, scrollHeight }) => scrollHeight > 1.01*clientHeight
 const resizeText = ({ element, parent }) => {
   debug('resizing: '+parent.scrollHeight+' > '+parent.clientHeight);
-  let i = 12 // let's start with 12px
+  let i = 10 // let's start small
   let overflow = false
-  const maxSize = 128 // very huge text size
+  let unit = 'px'
+  const maxSize = 100 // very huge text size
 
   while (!overflow && i < maxSize) {
-    element.style.fontSize = `${i}px`
+    element.style.fontSize = `${i}${unit}`
     debug(i+': '+parent.scrollHeight+' > '+parent.clientHeight);
     overflow = isOverflown(parent)
     if (!overflow) i++
   }
 
   // revert to last state where no overflow happened:
-  element.style.fontSize = `${i - 1}px`
+  element.style.fontSize = `${i - 1}${unit}`
   debug('result: '+parent.scrollHeight+' > '+parent.clientHeight);
 }
