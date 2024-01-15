@@ -341,9 +341,6 @@ function activateClock(){
 function activatePlay(){
 	selectScreen('playingScreen');
   calculatePlayListLines();
-  resizeText({element: document.querySelector('.playingTrack'), parent: document.querySelector('.playingTrackContainer')});
-  resizeText({element: document.querySelector('.playingArtist'), parent: document.querySelector('.playingArtistContainer')});
-  resizeText({element: document.querySelector('.playingAlbum'), parent: document.querySelector('.playingAlbumContainer')});
 }
 
 function activateTv(){
@@ -450,7 +447,13 @@ function updatePlayerUi() {
   if (gCurScreen === 'playingScreen')
     updatePlayMeter(gNowPlaying, true);
 
+
   if (gLastVal.isPlaying != gNowPlaying.isPlaying) {
+
+    resizeText({element: document.querySelector('.playingTrack'), parent: document.querySelector('.playingTrackContainer')});
+    resizeText({element: document.querySelector('.playingArtist'), parent: document.querySelector('.playingArtistContainer')});
+    resizeText({element: document.querySelector('.playingAlbum'), parent: document.querySelector('.playingAlbumContainer')});
+
     gLastVal.isPlaying = gNowPlaying.isPlaying;
     var elem = document.getElementById('playingPlay');
     changeSvgIcon(elem.children[0], gLastVal.isPlaying ? 'iconPause' : 'iconPlay')
@@ -1219,7 +1222,6 @@ function calculatePlayListLines() {
   showPlayInfo(pi);
 }
 
-
 function updateViewElements () {
   if (document.documentElement.clientWidth>document.documentElement.clientHeight) {
     var elem = document.getElementById("playingContent");
@@ -1322,7 +1324,7 @@ const resizeText = ({ element, parent }) => {
 
   while (!overflow && i < maxSize) {
     element.style.fontSize = `${i}${unit}`
-    debug(i+': '+parent.scrollHeight+' > '+parent.clientHeight);
+    //debug(i+': '+parent.scrollHeight+' > '+parent.clientHeight);
     overflow = isOverflown(parent)
     if (!overflow) i++
   }
