@@ -445,9 +445,9 @@ async function getInitialPlaybackState() {
 function updatePlayerUi() {
   if (gNowPlaying.textSizeUpdateRequested) {
     //screen elements should be resized
-    resizeText({element: document.querySelector('.playingTrack'), parent: document.querySelector('.playingTrackContainer')});
-    resizeText({element: document.querySelector('.playingArtist'), parent: document.querySelector('.playingArtistContainer')});
-    resizeText({element: document.querySelector('.playingAlbum'), parent: document.querySelector('.playingAlbumContainer')});
+    resizeText({element: document.getElementById('playingTrack'), parent: document.getElementById('playingTrackContainer')});
+    resizeText({element: document.getElementById('playingArtist'), parent: document.getElementById('playingArtistContainer')});
+    resizeText({element: document.getElementById('playingAlbum'), parent: document.getElementById('playingAlbumContainer')});
     gNowPlaying.textSizeUpdateRequested = false;
   }
 
