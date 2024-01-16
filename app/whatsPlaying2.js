@@ -34,7 +34,7 @@ const spotifyRoutes = {
 var gLoginUrl;
 var gCurScreen;
 var gUpdateTimer;
-var gNowPlaying = {deviceId: 'unknown device'};
+var gNowPlaying = {deviceId: 'unknown device', textSizeUpdateRequested:false};
 var gLastVal = {playPerc: -1, deviceId: 'unknown device'};  // cache of previous values
 var gNowScanning = false;
 var gState = 'init';
@@ -443,17 +443,19 @@ async function getInitialPlaybackState() {
 }
 
 function updatePlayerUi() {
+  if (gNowPlaying.textSizeUpdateRequested) {
+    //screen elements should be resized
+    resizeText({element: document.querySelector('.playingTrack'), parent: document.querySelector('.playingTrackContainer')});
+    resizeText({element: document.querySelector('.playingArtist'), parent: document.querySelector('.playingArtistContainer')});
+    resizeText({element: document.querySelector('.playingAlbum'), parent: document.querySelector('.playingAlbumContainer')});
+    gNowPlaying.textSizeUpdateRequested = false;
+  }
+
   // simulate progress bar between updates
   if (gCurScreen === 'playingScreen')
     updatePlayMeter(gNowPlaying, true);
 
-debug(450);
-    resizeText({element: document.querySelector('.playingTrack'), parent: document.querySelector('.playingTrackContainer')});
-    resizeText({element: document.querySelector('.playingArtist'), parent: document.querySelector('.playingArtistContainer')});
-    resizeText({element: document.querySelector('.playingAlbum'), parent: document.querySelector('.playingAlbumContainer')});
-
   if (gLastVal.isPlaying != gNowPlaying.isPlaying) {
-
     gLastVal.isPlaying = gNowPlaying.isPlaying;
     var elem = document.getElementById('playingPlay');
     changeSvgIcon(elem.children[0], gLastVal.isPlaying ? 'iconPause' : 'iconPlay')
@@ -461,7 +463,6 @@ debug(450);
     elem.style.background = (gLastVal.isPlaying ? gUiInfo.playMeterBackgroundPlay : gUiInfo.playMeterBackgroundPause);
   }
 
-  
 }
 
 function updateClock() {
@@ -909,7 +910,8 @@ async function getPlaybackState() {
           var elem=document.getElementById('playListBox');
           elem.innerHTML = newInnerHTML;
         }
-
+        
+        gNowPlaying.textSizeUpdateRequested = true;
       }
     }
 
@@ -1324,7 +1326,7 @@ const resizeText = ({ element, parent }) => {
 
   while (!overflow && i < maxSize) {
     element.style.fontSize = `${i}${unit}`
-    //debug(i+': '+parent.scrollHeight+' > '+parent.clientHeight);
+    debug(i+': '+parent.scrollHeight+' > '+parent.clientHeight);
     overflow = isOverflown(parent)
     if (!overflow) i++
   }
