@@ -448,6 +448,9 @@ function updatePlayerUi() {
     resizeText({element: document.getElementById('playingTrack'), parent: document.getElementById('playingTrackContainer')});
     resizeText({element: document.getElementById('playingArtist'), parent: document.getElementById('playingArtistContainer')});
     resizeText({element: document.getElementById('playingAlbum'), parent: document.getElementById('playingAlbumContainer')});
+    document.getElementById('playingTrack').style.opacity=1;
+    document.getElementById('playingArtist').style.opacity=1;
+    document.getElementById('playingAlbum').style.opacity=1;        
     gNowPlaying.textSizeUpdateRequested = false;
   }
 
@@ -889,6 +892,12 @@ async function getPlaybackState() {
         gNowPlaying.track = track.name;
         gNowPlaying.album = album.name;
         gNowPlaying.artist = getArtistName(track.artists); 
+
+        document.getElementById('playingTrack').style.opacity=0;
+        document.getElementById('playingArtist').style.opacity=0;
+        document.getElementById('playingAlbum').style.opacity=0;        
+        gNowPlaying.textSizeUpdateRequested = true;
+
         gNowPlaying.date = getYearFromDate(album.release_date, album.release_date_precision);
         gNowPlaying.explicit = track.explicit;
         gNowPlaying.popularity = track.popularity;
@@ -910,8 +919,6 @@ async function getPlaybackState() {
           var elem=document.getElementById('playListBox');
           elem.innerHTML = newInnerHTML;
         }
-        
-        gNowPlaying.textSizeUpdateRequested = true;
       }
     }
 
@@ -1318,7 +1325,7 @@ async function playQueueItem(track) {
 
 const isOverflown = ({ clientHeight, scrollHeight }) => scrollHeight > 1.01*clientHeight
 const resizeText = ({ element, parent }) => {
-  debug('resizing: '+parent.scrollHeight+' > '+parent.clientHeight);
+  //debug('resizing: '+parent.scrollHeight+' > '+parent.clientHeight);
   let i = 10 // let's start small
   let overflow = false
   let unit = 'px'
@@ -1326,12 +1333,12 @@ const resizeText = ({ element, parent }) => {
 
   while (!overflow && i < maxSize) {
     element.style.fontSize = `${i}${unit}`
-    debug(i+': '+parent.scrollHeight+' > '+parent.clientHeight);
+    //debug(i+': '+parent.scrollHeight+' > '+parent.clientHeight);
     overflow = isOverflown(parent)
     if (!overflow) i++
   }
 
   // revert to last state where no overflow happened:
   element.style.fontSize = `${i - 1}${unit}`
-  debug('result: '+parent.scrollHeight+' > '+parent.clientHeight);
+  //debug('result: '+parent.scrollHeight+' > '+parent.clientHeight);
 }

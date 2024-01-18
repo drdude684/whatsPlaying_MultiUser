@@ -188,7 +188,7 @@
           animation: fadeToHalf 1.0s;
           opacity: 0.5
       }
-
+      
       .screenContent {
           display: flex;
           flex-direction: column;
@@ -340,7 +340,7 @@
         font-weight: bolder;
         max-height: 56cqh;
         width: 100%;
-        -webkit-line-clamp: 1;
+        -webkit-line-clamp: 1;        
       }
 
       .playingArtistBox {
@@ -469,9 +469,25 @@
         text-align: left;
         container-type: size;
         height: 80%;
+        min-height: 80%;
         width: 100%;
         overflow:hidden;
         white-space: nowrap;
+        flex: 0 1 80cqh;
+      }
+
+      .backIconBox {
+        display: block;
+        height: 20cqh;        
+        width: 100%;
+      }
+
+      .backIcon {
+        position: absolute;      
+        right: 0;
+        bottom: 0;
+        height: 16cqh;
+        margin: 2cqh;  
       }
 
    </style>
@@ -606,6 +622,9 @@
               </div>
               <div id="playListInfo" class="playListInfo" onclick="uiCmd('togglePlayInfo');">
                 <div id="playListBox" class="playListBox">
+                </div>
+                <div id="backIconBox" class="backIconBox">
+                  <img id="backIcon" class="backIcon" src="assets/back-arrow-white.svg"></img>                             
                 </div>
               </div>
            </div>
