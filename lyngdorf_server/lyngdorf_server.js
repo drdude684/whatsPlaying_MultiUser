@@ -166,6 +166,27 @@ function setupRoutes(server) {
     handler: async function (req, h) { return getStatus(req, h); }
   });
 
+  // control: send status request
+  server.route({
+    method: 'GET',
+    path: '/toggleMute',
+    handler: async function (req, h) { return toggleMute(req, h); }
+  });
+
+  // control: send status request
+  server.route({
+    method: 'GET',
+    path: '/volumeDown',
+    handler: async function (req, h) { return volumeDown(req, h); }
+  });
+  
+  // control: send status request
+  server.route({
+    method: 'GET',
+    path: '/volumeUp',
+    handler: async function (req, h) { return volumeUp(req, h); }
+  });
+
 }
 
 // -- helper functions --
@@ -367,6 +388,24 @@ function getStatus(req, h) {
   if (Config.refreshInterval == 0)
     refreshStatus();
   return currentStatus;
+}
+
+function toggleMute(req, h) {
+  switch(currentStatus.mute) {
+    case 'ON':  client.write('!MUTEOFF\n');break;
+    case 'OFF':  client.write('!MUTEON\n');break;
+  }
+  return true;
+}
+
+function volumeDown(req, h) {
+  client.write('!VOLDN\n');
+  return true;
+}
+
+function volumeUp(req, h) {
+  client.write('!VOLUP\n');
+  return true;
 }
 
 function demoUpdate() {

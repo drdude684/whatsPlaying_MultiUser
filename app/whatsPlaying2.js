@@ -258,6 +258,9 @@ function uiCmd(cmd) {
     case 'play':           spotifyApi(gNowPlaying.isPlaying ? spotifyRoutes.playPause : spotifyRoutes.playPlay, arg);break;
     case 'next':           spotifyApi(spotifyRoutes.playNext, arg);break;
     case 'prev':           spotifyApi(spotifyRoutes.playPrev, arg);break;
+    case 'mute':           ampCommand('/toggleMute');break;
+    case 'volDown':        ampCommand('/volumeDown');break;
+    case 'volUp':          ampCommand('/volumeUp');break;
     case 'toggleControls': showPlayControls(!Config.showPlayControls); break;
     case 'togglePlayInfo': showPlayInfo(!gUiInfo.showPlayInfo);break;
   }
@@ -710,8 +713,15 @@ async function updateAmpScan() {
 }
 
 function showPlayControls(show) {
-  var elem = document.getElementById('playingControls');
+  //var elem = document.getElementById('playingControls');
+  //elem.style.display = show ? 'inline-block' : 'none';
+  var elem = document.getElementById('controlBox');
   elem.style.display = show ? 'flex' : 'none';
+  if (Config.lyngdorfServer!=='') {
+    elem = document.getElementById('volumeControls');
+    elem.style.display = show ? 'flex' : 'none';
+  }
+    
   Config.showPlayControls = show;
 }
 
@@ -1153,6 +1163,23 @@ async function getLocal(route)
   }
 }
 
+async function ampCommand(route) {
+  try {
+    var baseUri = Config.lyngdorfServer;
+    var res = await fetch(baseUri + route);
+    if ( res.status == 200 ) {
+      res = await res.json();
+      if (res.error)
+        return res;
+      ampStatus=res;
+      return res;
+    }
+    return {error: `lyngdorf server returned error: ${res.status}`};
+  } catch(e) {
+    return {error: `lyngdorf server problem: ${e.message}`};
+  }
+}
+
 async function updateAmp()
 {
   if (Config.lyngdorfServer===''){
@@ -1161,21 +1188,8 @@ async function updateAmp()
     ampStatus.streamType='2';
     return;
   }
-  try {
-    var baseUri = Config.lyngdorfServer;
-    var res = await fetch(baseUri + '/status');
-    if ( res.status == 200 ) {
-      res = await res.json();
-      if (res.error)
-        return res;
-      ampStatus=res;
-      return res;
-    }
-
-    return {error: `lyngdorf server returned error: ${res.status}`};
-  } catch(e) {
-    return {error: `lyngdorf server problem: ${e.message}`};
-  }
+  res=await ampCommand('/status');
+  return res;
 }
 
 function setState(requestedState, data)
