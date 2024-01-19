@@ -444,14 +444,19 @@ async function getInitialPlaybackState() {
 
 function updatePlayerUi() {
   if (gNowPlaying.textSizeUpdateRequested) {
+    res=true;
     //screen elements should be resized
-    resizeText({element: document.getElementById('playingTrack'), parent: document.getElementById('playingTrackContainer')});
-    resizeText({element: document.getElementById('playingArtist'), parent: document.getElementById('playingArtistContainer')});
-    resizeText({element: document.getElementById('playingAlbum'), parent: document.getElementById('playingAlbumContainer')});
+    res_temp=resizeText({element: document.getElementById('playingTrack'), parent: document.getElementById('playingTrackContainer')});
+    res=res&&res_temp;
+    res_temp=resizeText({element: document.getElementById('playingArtist'), parent: document.getElementById('playingArtistContainer')});
+    res=res&&res_temp;
+    res_temp=resizeText({element: document.getElementById('playingAlbum'), parent: document.getElementById('playingAlbumContainer')});
+    res=res&&res_temp;
+    // should only do the below if res is true, but for debugging we leave it as is for now
     document.getElementById('playingTrack').style.opacity=1;
     document.getElementById('playingArtist').style.opacity=1;
     document.getElementById('playingAlbum').style.opacity=1;        
-    gNowPlaying.textSizeUpdateRequested = false;
+    gNowPlaying.textSizeUpdateRequested = res;
   }
 
   // simulate progress bar between updates
@@ -1341,4 +1346,5 @@ const resizeText = ({ element, parent }) => {
   // revert to last state where no overflow happened:
   element.style.fontSize = `${i - 1}${unit}`
   //debug('result: '+parent.scrollHeight+' > '+parent.clientHeight);
+  return isOverflown(parent);
 }
