@@ -78,6 +78,10 @@
           from {opacity: 1;}
           to {opacity: 0;}
       }
+      
+      .contrastborder {
+        /* border: 1px yellow solid; */
+      }
 
       .screen {
       }
@@ -273,9 +277,14 @@
         flex: 0 0 50cqi;
         flex-direction: column;
         align-items: center;
+/*
         flex: 0 1 min(91cqh,91cqw);
         width: min(91cqh,91cqw);
         height: min(91cqh,91cqw);
+*/
+        flex: 0 1 min(100cqi,100cqb));
+        width: min(100cqi,100cqb);
+        height: min(100cqi,100cqb);
         container-type: size;
       }
 
@@ -322,7 +331,7 @@
         display: flex;
         flex: 0 0 56cqh;
         width: 100%;
-        margin: 2cqh 0;
+        border: 2cqh 0;
       }
 
       .playingTrackContainer {
@@ -347,7 +356,7 @@
         display: flex;
         flex: 0 0 16cqh;
         width: 100%;
-        margin: 2cqh 0;
+        border: 2cqh 0;
       }
 
       .playingArtistContainer {
@@ -372,7 +381,7 @@
         display: flex;
         flex: 0 0 14cqh;
         width: 100%;
-        margin: 2cqh 0;
+        border: 2cqh 0;
       }
 
       .playingAlbumContainer {
@@ -666,18 +675,18 @@
               </div>
                  
               <div id="playingInfo" class="playingInfo" onclick="uiCmd('togglePlayInfo');">
-                 <div id="playingTrackBox" class="playingTrackBox">
+                 <div id="playingTrackBox" class="playingTrackBox contrastborder">
                    <div id="playingTrackContainer" class="playingTrackContainer">
                      <div id="playingTrack" class="playingTrack">
                      </div>
                    </div>
                  </div>
-                 <div id="playingArtistBox" class="playingArtistBox">
+                 <div id="playingArtistBox" class="playingArtistBox contrastborder">
                    <div id="playingArtistContainer" class="playingArtistContainer">
                      <div id="playingArtist" class="playingArtist"></div>
                    </div>
                  </div>
-                 <div id="playingAlbumBox" class="playingAlbumBox">
+                 <div id="playingAlbumBox" class="playingAlbumBox contrastborder">
                    <div id="playingAlbumContainer" class="playingAlbumContainer">
                      <div id="playingAlbum" class="playingAlbum"></div>
                    </div>
