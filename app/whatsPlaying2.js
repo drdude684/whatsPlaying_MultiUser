@@ -18,6 +18,7 @@ const spotifyRoutes = {
   getArtist: {type: 'GET', url: 'artists/{0}'},  // + artist_id
   getDevices: {type: 'GET', url: 'me/player/devices'},
   getQueue: {type: 'GET', url: 'me/player/queue'},
+  getPlaylists: {type: 'GET', url: 'me/playlists'},
   playPlay: {type: 'PUT', url: 'me/player/play{0}'},
   playPause: {type: 'PUT', url: 'me/player/pause{0}'},
   playNext: {type: 'POST', url: 'me/player/next{0}'},
@@ -201,10 +202,16 @@ function debug(msg) {
     
   if (typeof(msg)=='string') {
     try {
-      const match1 = RegExp('\\d+/(.*:\\d+:\\d+)').exec(new Error().stack.split("\n")[1])[1]; // this works for Safari on MacOS
-      const match2 = RegExp('\\d+/(.*:\\d+:\\d+)').exec(new Error().stack.split("\n")[2])[1]; // this works for Safari on MacOS
+      //const match1 = RegExp('\\d+/(.*:\\d+:\\d+)').exec(new Error().stack.split("\n")[1])[1]; // this works for Safari on MacOS
+      //const match2 = RegExp('\\d+/(.*:\\d+:\\d+)').exec(new Error().stack.split("\n")[2])[1]; // this works for Safari on MacOS
+      const match1 = RegExp(':(\\d+:\\d+)').exec(new Error().stack.split("\n")[1])[1]; // this works for Safari on MacOS
+      const match2 = RegExp(':(\\d+:\\d+)').exec(new Error().stack.split("\n")[2])[1]; // this works for Safari on MacOS
+      
       console.log(match2+' -> '+match1+' : '+msg);
     } catch(e) {
+      const fullstack = new Error().stack.split("\n"); // this works for Safari on MacOS
+      console.log(fullstack[1]);
+      
       console.log(msg);
     }
   } else {
@@ -569,6 +576,7 @@ async function updateScanning() {
 	  setState('play');
 	  return;
   }
+  
   if(ampStatus.sourceIndex!='8'){
 	  debug('Amplifier input not set to Spotify, so we skip asking Spotify anything');
 	  scanMessageElement = document.getElementById('scanningContent');
@@ -578,6 +586,7 @@ async function updateScanning() {
 	  return;
   }
 */
+
   if((ampStatus.sourceIndex!='8')&&(Config.lyngdorfServer!=='')){
 	  debug('Amplifier input not set to Spotify, so we skip asking Spotify anything');
 	  scanMessageElement = document.getElementById('scanningContent');
@@ -879,10 +888,10 @@ async function getPlaybackState() {
     
     //if((ampStatus.streamType!='2')||(ampStatus.sourceIndex!='8')){
     if((Config.preferedPlayer!=='')&&(ampStatus.sourceIndex!='8')){
-		debug('amplifier is not streaming spotify, returning to scanning mode');		
-		setState('scan');// perhaps consider returning to 'wait' state
-		return {data:null};
-	}
+      debug('amplifier is not streaming spotify, returning to scanning mode');		
+      setState('scan');// perhaps consider returning to 'wait' state
+      return {data:null};
+    }
 
     var track = data.item;
     if (!track) {
@@ -919,6 +928,9 @@ async function getPlaybackState() {
         gNowPlaying.playlist = playlist;
         gNowPlaying.albumImage = getAlbumImage(album.images);
         gNowPlaying.duration = track.duration_ms;
+
+debug('getting playlists just for debugging purposes');
+await getPlaylists();
 
         // get queue
         gNowPlaying.queue = await getQueue();
@@ -1107,6 +1119,42 @@ async function getQueue() {
   return list;
 }
 
+async function getPlaylists() {
+  var res = await spotifyApi(spotifyRoutes.getPlaylists);
+  if (res.error)
+    return res;
+
+  var list = [];
+  var data = res.data;
+debug(data);
+  if (data && data.items) {
+    var items = data.items;
+    for (var i = 0; i < items.length; i++) {
+      var playlist = items[i];
+      debug(playlist.name);
+      
+/*
+ *       var album = track.album;
+
+      var entry = {};
+      entry.type = track.type;  // e.g. 'track'
+      entry.id = track.uri;     // track ID
+      entry.track = track.name;
+      entry.album = album.name;
+      entry.artist = getArtistName(track.artists);
+      entry.date = getYearFromDate(album.release_date, album.release_date_precision);
+      entry.explicit = track.explicit;
+      entry.popularity = track.popularity;
+      entry.albumImage = getAlbumImage(album.images, false);
+      entry.duration = track.duration_ms;
+*/
+      list.push(playlist);
+    }
+  }
+
+  return list;
+}
+
 async function spotifyApiDirect(type, route) {
   if (!gAccessToken) {
     return {error: 'login'};
@@ -1171,7 +1219,6 @@ async function ampCommand(route) {
       res = await res.json();
       if (res.error)
         return res;
-      ampStatus=res;
       return res;
     }
     return {error: `lyngdorf server returned error: ${res.status}`};
@@ -1189,6 +1236,7 @@ async function updateAmp()
     return;
   }
   res=await ampCommand('/status');
+  ampStatus=res;
   return res;
 }
 
