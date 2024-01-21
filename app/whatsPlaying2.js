@@ -1,10 +1,11 @@
 /* ***********************************************
+ * whatsPlaying2
+ * by drdude684
+ * based on
  * whatsPlaying
  * Copyright (C) Greg Brown, All rights reserved.
  * https://github.com/gregtbrown/whatsPlaying
  * ***********************************************/
-
-// additional code by drdude684
 
 var SVGNS = 'http://www.w3.org/2000/svg';
 var SVGXLINK = 'http://www.w3.org/1999/xlink';
@@ -669,9 +670,6 @@ async function updateAmpScan() {
   if (Config.lyngdorfServer===''){
     return;
   }
-
-  debug('checking amp status');
-
   var res;
   res=await updateAmp();
   if (res.error){
