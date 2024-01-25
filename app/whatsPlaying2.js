@@ -454,7 +454,11 @@ async function getInitialPlaybackState() {
 }
 
 function updatePlayerUi() {
-  if (gNowPlaying.textSizeUpdateRequested) {
+  if ((gNowPlaying.textSizeUpdateRequested) ||
+        isOverflown(document.getElementById('playingTrackContainer')) ||
+        isOverflown(document.getElementById('playingArtistContainer')) ||
+        isOverflown(document.getElementById('playingAlbumContainer')))
+   {
     res=true;
     //screen elements should be resized
     res_temp=resizeText({element: document.getElementById('playingTrack'), parent: document.getElementById('playingTrackContainer')});
