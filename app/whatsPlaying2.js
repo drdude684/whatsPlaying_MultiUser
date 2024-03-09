@@ -931,9 +931,6 @@ async function getPlaybackState() {
         gNowPlaying.albumImage = getAlbumImage(album.images);
         gNowPlaying.duration = track.duration_ms;
 
-debug('getting playlists just for debugging purposes');
-await getPlaylists();
-
         // get queue
         gNowPlaying.queue = await getQueue();
         if (gNowPlaying.queue.length >0 ) {
