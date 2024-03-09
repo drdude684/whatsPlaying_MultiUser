@@ -243,6 +243,7 @@ async function run() {
 	  client.on('error', function() {
 	    if (Config.demoIfError) {
 		  debug('Socket error, falling back to demo mode');
+      client.destroySoon();
 		  initDemoMode();
 		} else {
 		  debug('Socket error');
