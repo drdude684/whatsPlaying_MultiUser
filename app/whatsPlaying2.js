@@ -271,6 +271,7 @@ function uiCmd(cmd) {
     case 'volUp':          ampCommand('/volumeUp');break;
     case 'toggleControls': showPlayControls(!Config.showPlayControls); break;
     case 'togglePlayInfo': showPlayInfo(!gUiInfo.showPlayInfo);break;
+    case 'settings':       setState('settings');break;
   }
   
   gTimerBlockList=prevTimerBlockList;
@@ -1261,6 +1262,10 @@ function setState(requestedState, data)
 		};break;
 		case 'sleep':{
 			activateSleep();
+		};break;
+		case 'settings':{
+			selectScreen('settingsScreen');
+      debug('switching to settings screen does not work properly');
 		};break;
 		case 'error':{
 			if (!data)
