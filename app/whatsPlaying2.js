@@ -42,13 +42,14 @@ var gNowScanning = false;
 var gState = 'init';
 var gLastState = 'init';
 var gStateTimerMap = new Map([
-  ["wait",  new Map([["clock",1],["timeBar",0],["server",0],["playback",0],["scanning",0],["ampScan",1]])],
-  ["scan",  new Map([["clock",1],["timeBar",0],["server",1],["playback",0],["scanning",1],["ampScan",1]])],
-  ["play",  new Map([["clock",1],["timeBar",1],["server",1],["playback",1],["scanning",0],["ampScan",1]])],
-  ["tv",    new Map([["clock",1],["timeBar",0],["server",0],["playback",0],["scanning",0],["ampScan",1]])],
-  ["sleep", new Map([["clock",1],["timeBar",0],["server",0],["playback",0],["scanning",0],["ampScan",1]])],
-  ["error", new Map([["clock",1],["timeBar",0],["server",0],["playback",0],["scanning",0],["ampScan",1]])],
-  ["login", new Map([["clock",1],["timeBar",0],["server",0],["playback",0],["scanning",0],["ampScan",1]])],
+  ["wait",     new Map([["clock",1],["timeBar",0],["server",0],["playback",0],["scanning",0],["ampScan",1]])],
+  ["scan",     new Map([["clock",1],["timeBar",0],["server",1],["playback",0],["scanning",1],["ampScan",1]])],
+  ["play",     new Map([["clock",1],["timeBar",1],["server",1],["playback",1],["scanning",0],["ampScan",1]])],
+  ["tv",       new Map([["clock",1],["timeBar",0],["server",0],["playback",0],["scanning",0],["ampScan",1]])],
+  ["sleep",    new Map([["clock",1],["timeBar",0],["server",0],["playback",0],["scanning",0],["ampScan",1]])],
+  ["error",    new Map([["clock",1],["timeBar",0],["server",0],["playback",0],["scanning",0],["ampScan",1]])],
+  ["login",    new Map([["clock",1],["timeBar",0],["server",0],["playback",0],["scanning",0],["ampScan",1]])],
+  ["settings", new Map([["clock",1],["timeBar",0],["server",0],["playback",0],["scanning",0],["ampScan",0]])],
 ]);
 var gTimerBlockList=[];
 var gCurrentServer = 0;
@@ -58,7 +59,11 @@ var gPlayerId;  // store this from last call
 
 var ampStatus = {power:'Undefined',volume:'undefined',sourceIndex:'Unknown',sourceName:'Unknown',mute:'Unknown',streamType:'Unknown'}; // status of associated lyngdorf device
 
-var gUiInfo = {playMeterBackgroundPlay: 'teal', playMeterBackgroundPause: 'maroon', playListLinesCalculated: false, playListLines: 1};
+var gUiInfo = {playMeterBackgroundPlay: 'teal', playMeterBackgroundPause: 'maroon', playListLinesCalculated: false, playListLines: 1, settingsUseAmpBaseString: ''};
+
+var gSettings={};
+
+var gDefaults={};
 
 // run single setInterval timer and handle our own timers manually in that
 var gTimer = {
@@ -129,6 +134,19 @@ window.addEventListener('load', initialize, true);
 
 async function initialize() {
 
+  // store initial settings
+  gDefaults.useAmp=true;
+  elem = document.getElementById('settings_mainColor');
+  gDefaults.mainBgColor=elem.value;
+  elem = document.getElementById('settings_secondaryColor');
+  gDefaults.secondaryBgColor=elem.value;
+  
+  // load settings from local storage
+  storedSettings=JSON.parse(localStorage.getItem('storedSettings'));
+  if(storedSettings!=null) {
+    gSettings=storedSettings;
+  }
+  
   processParameter('serverUrls',['http://localhost/']);
   processParameter('idleMinutes',5);
   processParameter('errorTimeOut',60);
@@ -139,6 +157,24 @@ async function initialize() {
   processParameter('sleepMinutes',0);
   processParameter('showMouse',true);
   processParameter('lyngdorfServer','');
+  
+  Config.useAmp=(Config.lyngdorfServer!=='');
+  
+  if(gSettings!=null) {
+    var r = document.querySelector(':root');  
+    if(typeof(gSettings.useAmp)!=='undefined')
+      Config.useAmp=gSettings.useAmp;
+    if(typeof(gSettings.mainBgColor)!=='undefined') {
+      elem = document.getElementById('settings_mainColor');
+      elem.value=gSettings.mainBgColor;
+      r.style.setProperty('--main-bg-color', gSettings.mainBgColor);
+    }
+    if(typeof(gSettings.secondaryBgColor)!=='undefined') {
+      elem = document.getElementById('settings_secondaryColor');
+      elem.value=gSettings.secondaryBgColor;
+      r.style.setProperty('--secondary-bg-color', gSettings.secondaryBgColor);
+    }      
+  }
   
   debug(Config);
       
@@ -187,11 +223,10 @@ async function initialize() {
   
   updateViewElements(); //initial sizing etc.
  
-  if (Config.lyngdorfServer===''){
-    setState('scan');
-  } else {
-    setState('wait');
-  }
+	var elem = document.getElementById('settings_useAmp');
+    gUiInfo.settingsUseAmpBaseString=elem.innerHTML;
+     
+  setState('wait');
   
 }
 
@@ -218,6 +253,13 @@ function debug(msg) {
   } else {
     console.log(msg);
   }
+  
+  /*
+   * if(gState=='settings') {
+    elem = document.getElementById('settings_line3');
+    elem.innerHTML=JSON.stringify(msg);
+  }
+  */
 }
 
 function hasClass(elem, className) { return elem.classList.contains(className); }
@@ -271,7 +313,8 @@ function uiCmd(cmd) {
     case 'volUp':          ampCommand('/volumeUp');break;
     case 'toggleControls': showPlayControls(!Config.showPlayControls); break;
     case 'togglePlayInfo': showPlayInfo(!gUiInfo.showPlayInfo);break;
-    case 'settings':       setState('settings');break;
+    case 'settings':       if (gState !== 'settings') setState('settings'); else closeSettings();break;
+    case 'clearSettings':  clearSettings();break;
   }
   
   gTimerBlockList=prevTimerBlockList;
@@ -344,6 +387,11 @@ function timerUpdates() {
 }
 
 function activateClock(){
+  if (!Config.useAmp){
+    debug('wait state requested, but no Lyngdorf server configured, switching to scan state');
+    setState('scan');
+    return;
+  } 
 	updateClock();
 	selectScreen('clockScreen');
 	var elem = document.getElementById('clockContent');
@@ -372,6 +420,56 @@ function activateError(data){
 function activateScan(){
   getPlaybackState();
   selectScreen('scanningScreen');
+}
+
+function activateSettings(){
+	selectScreen('settingsScreen');
+	var elem = document.getElementById('settings_useAmp');
+	if (Config.lyngdorfServer!=='') {
+    elem.innerHTML=gUiInfo.settingsUseAmpBaseString+'Connect to Lyngdorf amplifier on address '+Config.lyngdorfServer;
+    elem = document.getElementById('settings_useAmpCheckbox');
+    elem.checked=Config.useAmp;
+  }
+  else
+    elem.innerHTML='no Lyngdorf amplifier configured, options to control connection not available';  
+}
+
+function closeSettings(){
+  // process all values from the settings form before returning to wait state
+  
+  var r = document.querySelector(':root');  
+
+  var elem = document.getElementById('settings_useAmpCheckbox');
+  Config.useAmp=elem.checked;
+  
+  elem = document.getElementById('settings_mainColor');
+  r.style.setProperty('--main-bg-color', elem.value);
+  gSettings.mainBgColor=elem.value;
+  elem = document.getElementById('settings_secondaryColor');
+  r.style.setProperty('--secondary-bg-color', elem.value);
+  gSettings.secondaryBgColor=elem.value;
+  
+  // always save settings to local storage
+  gSettings.useAmp=Config.useAmp;
+  localStorage.setItem('storedSettings',JSON.stringify(gSettings));
+  
+  setState('wait');
+}
+
+function clearSettings(){
+  localStorage.removeItem('storedSettings');
+
+  var r = document.querySelector(':root');  
+  elem = document.getElementById('settings_mainColor');
+  elem.value=gDefaults.mainBgColor;
+  r.style.setProperty('--main-bg-color', gSettings.mainBgColor);
+  elem = document.getElementById('settings_secondaryColor');
+  elem.value=gDefaults.secondaryBgColor;
+  r.style.setProperty('--secondary-bg-color', gSettings.secondaryBgColor);
+
+  Config.useAmp=gDefaults.useAmp;
+
+  activateSettings();// just to propagate useAmp in a consistent way
 }
 
 async function updateServer() {
@@ -593,7 +691,7 @@ async function updateScanning() {
   }
 */
 
-  if((ampStatus.sourceIndex!='8')&&(Config.lyngdorfServer!=='')){
+  if((ampStatus.sourceIndex!='8')&&(Config.useAmp)){
 	  debug('Amplifier input not set to Spotify, so we skip asking Spotify anything');
 	  scanMessageElement = document.getElementById('scanningContent');
 	  scanMessageElement.innerHTML = 'Spotify not active on amplifier';
@@ -672,7 +770,7 @@ async function updateAmpScan() {
     return;
   gLastVal.scanClock = now;
 
-  if (Config.lyngdorfServer===''){
+  if (!Config.useAmp){
     return;
   }
   var res;
@@ -729,7 +827,7 @@ function showPlayControls(show) {
   //elem.style.display = show ? 'inline-block' : 'none';
   var elem = document.getElementById('controlBox');
   elem.style.display = show ? 'flex' : 'none';
-  if (Config.lyngdorfServer!=='') {
+  if (Config.useAmp) {
     elem = document.getElementById('volumeControls');
     elem.style.display = show ? 'flex' : 'none';
   }
@@ -1229,7 +1327,7 @@ async function ampCommand(route) {
 
 async function updateAmp()
 {
-  if (Config.lyngdorfServer===''){
+  if (!Config.useAmp){
     // return as if all is well
     ampStatus.power='ON';
     ampStatus.streamType='2';
@@ -1264,8 +1362,7 @@ function setState(requestedState, data)
 			activateSleep();
 		};break;
 		case 'settings':{
-			selectScreen('settingsScreen');
-      debug('switching to settings screen does not work properly');
+			activateSettings();
 		};break;
 		case 'error':{
 			if (!data)
