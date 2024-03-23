@@ -859,7 +859,17 @@ function updatePlayMeter(data, interpolate) {
   showPlayMeter(true);
 }
 
-function updatePlayingScreen(data) {
+function waitForImage(imgElem) {
+    return new Promise(res => {
+        if (imgElem.complete) {
+            return res();
+        }
+        imgElem.onload = () => res();
+        imgElem.onerror = () => res();
+    });
+}
+
+async function updatePlayingScreen(data) {
   function setText(id, text) {
     var elem = document.getElementById(id);
     if (elem)
@@ -882,9 +892,9 @@ function updatePlayingScreen(data) {
         elem.style.opacity = '0';
       else {
         elem.src = data.albumImage;
-        elem.style.opacity = '1';
-        elem.onload=getPalette('playingAlbumImage');       
-        
+        elem.style.opacity = '1';        
+        await waitForImage(elem);
+        getPalette('playingAlbumImage');
       }
     }
   }
@@ -1624,16 +1634,29 @@ const quantization = (rgbValues, depth) => {
   ];
 };
 
+const rgbToHex = (pixel) => {
+  const componentToHex = (c) => {
+    const hex = c.toString(16);
+    return hex.length == 1 ? "0" + hex : hex;
+  };
+
+  return (
+    "#" +
+    componentToHex(pixel.r) +
+    componentToHex(pixel.g) +
+    componentToHex(pixel.b)
+  ).toUpperCase();
+};
+
+
 const getPalette = (elementId) => {
+debug('establishing palette');
   const image = document.getElementById(elementId);
+  image.crossOrigin = "anonymous";
     // Set the canvas size to be the same as of the uploaded image
     const canvas = new OffscreenCanvas(image.width,image.height);
-    //canvas.width = image.width;
-    //canvas.height = image.height;
     const ctx = canvas.getContext("2d");
-debugger;
-return;
-    ctx.drawImage(image, 0, 0,64,64);
+    ctx.drawImage(image, 0, 0,image.width,image.height);
     /**
      * getImageData returns an array full of RGBA values
      * each pixel consists of four values: the red value of the colour, the green, the blue and the alpha
@@ -1649,8 +1672,7 @@ return;
      * while trying to visually maintin the original image as much as possible
      */
     const quantColors = quantization(rgbArray, 0);
-
-
-debug(quantColors);
-
+    var r = document.querySelector(':root');  
+    r.style.setProperty('--secondary-bg-color', rgbToHex(quantColors[15]));
+    //r.style.setProperty('--main-bg-color', rgbToHex(quantColors[15]));
 };
