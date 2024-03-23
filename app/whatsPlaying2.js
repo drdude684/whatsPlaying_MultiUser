@@ -966,7 +966,7 @@ async function getPlaybackState() {
       gNowPlaying.deviceId = data.device.id;
       gLastVal.deviceId = data.device.id;
       if (Config.preferedPlayer!=='')
-		  if (Config.preferedPlayer!==data.device.name){
+		  if ((Config.preferedPlayer!==data.device.name)&&Config.useAmp){
 			  // not prefered device, should now go back to scanning mode
 			  debug('current device not the prefered type, returning to scanning mode');
 			  setState('scan');
@@ -975,7 +975,7 @@ async function getPlaybackState() {
     }
     
     //if((ampStatus.streamType!='2')||(ampStatus.sourceIndex!='8')){
-    if((Config.preferedPlayer!=='')&&(ampStatus.sourceIndex!='8')){
+    if((Config.preferedPlayer!=='')&&(ampStatus.sourceIndex!='8')&&Config.useAmp){
       debug('amplifier is not streaming spotify, returning to scanning mode');		
       setState('scan');// perhaps consider returning to 'wait' state
       return {data:null};
