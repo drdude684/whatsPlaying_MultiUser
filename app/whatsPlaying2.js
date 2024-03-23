@@ -313,7 +313,8 @@ function uiCmd(cmd) {
     case 'volUp':          ampCommand('/volumeUp');break;
     case 'toggleControls': showPlayControls(!Config.showPlayControls); break;
     case 'togglePlayInfo': showPlayInfo(!gUiInfo.showPlayInfo);break;
-    case 'settings':       if (gState !== 'settings') setState('settings'); else closeSettings();break;
+    case 'settings':       if (gState !== 'settings') setState('settings');break;
+    case 'closeSettings':  if (gState === 'settings') closeSettings();break;
     case 'clearSettings':  clearSettings();break;
   }
   
@@ -674,22 +675,6 @@ async function reinitialize() {
 }
 	
 async function updateScanning() {
-/*
- * 
-  if (Config.preferedPlayer===''){
-	  setState('play');
-	  return;
-  }
-  
-  if(ampStatus.sourceIndex!='8'){
-	  debug('Amplifier input not set to Spotify, so we skip asking Spotify anything');
-	  scanMessageElement = document.getElementById('scanningContent');
-	  scanMessageElement.innerHTML = 'Spotify not active on amplifier';
-	  scanMessageElement = document.getElementById('scanningContent2');
-	  scanMessageElement.innerHTML = 'Amp input: '+ampStatus.sourceName;
-	  return;
-  }
-*/
 
   if((ampStatus.sourceIndex!='8')&&(Config.useAmp)){
 	  debug('Amplifier input not set to Spotify, so we skip asking Spotify anything');
@@ -720,7 +705,7 @@ async function updateScanning() {
   
   var data = res.data;
 
-  if(Config.preferedPlayer!=='') {
+  if((Config.preferedPlayer!=='')&&Config.useAmp) {
     scanMessage='scanning server '+gCurrentServer+' for the activation of a device named \"'+Config.preferedPlayer+'\"';    
     if ( data != null ) {
       if (data.device) {
@@ -898,6 +883,8 @@ function updatePlayingScreen(data) {
       else {
         elem.src = data.albumImage;
         elem.style.opacity = '1';
+        elem.onload=getPalette('playingAlbumImage');       
+        
       }
     }
   }
@@ -1511,3 +1498,159 @@ const resizeText = ({ element, parent }) => {
   //debug('result: '+parent.scrollHeight+' > '+parent.clientHeight);
   return isOverflown(parent);
 }
+
+
+const buildRgb = (imageData) => {
+  const rgbValues = [];
+  // note that we are loopin every 4!
+  // for every Red, Green, Blue and Alpha
+  for (let i = 0; i < imageData.length; i += 4) {
+    const rgb = {
+      r: imageData[i],
+      g: imageData[i + 1],
+      b: imageData[i + 2],
+    };
+
+    rgbValues.push(rgb);
+  }
+
+  return rgbValues;
+};
+
+/**
+ * Calculate the color distance or difference between 2 colors
+ *
+ * further explanation of this topic
+ * can be found here -> https://en.wikipedia.org/wiki/Euclidean_distance
+ * note: this method is not accuarate for better results use Delta-E distance metric.
+ */
+const calculateColorDifference = (color1, color2) => {
+  const rDifference = Math.pow(color2.r - color1.r, 2);
+  const gDifference = Math.pow(color2.g - color1.g, 2);
+  const bDifference = Math.pow(color2.b - color1.b, 2);
+
+  return rDifference + gDifference + bDifference;
+};
+
+// returns what color channel has the biggest difference
+const findBiggestColorRange = (rgbValues) => {
+  /**
+   * Min is initialized to the maximum value posible
+   * from there we procced to find the minimum value for that color channel
+   *
+   * Max is initialized to the minimum value posible
+   * from there we procced to fin the maximum value for that color channel
+   */
+  let rMin = Number.MAX_VALUE;
+  let gMin = Number.MAX_VALUE;
+  let bMin = Number.MAX_VALUE;
+
+  let rMax = Number.MIN_VALUE;
+  let gMax = Number.MIN_VALUE;
+  let bMax = Number.MIN_VALUE;
+
+  rgbValues.forEach((pixel) => {
+    rMin = Math.min(rMin, pixel.r);
+    gMin = Math.min(gMin, pixel.g);
+    bMin = Math.min(bMin, pixel.b);
+
+    rMax = Math.max(rMax, pixel.r);
+    gMax = Math.max(gMax, pixel.g);
+    bMax = Math.max(bMax, pixel.b);
+  });
+
+  const rRange = rMax - rMin;
+  const gRange = gMax - gMin;
+  const bRange = bMax - bMin;
+
+  // determine which color has the biggest difference
+  const biggestRange = Math.max(rRange, gRange, bRange);
+  if (biggestRange === rRange) {
+    return "r";
+  } else if (biggestRange === gRange) {
+    return "g";
+  } else {
+    return "b";
+  }
+};
+
+/**
+ * Median cut implementation
+ * can be found here -> https://en.wikipedia.org/wiki/Median_cut
+ */
+const quantization = (rgbValues, depth) => {
+  const MAX_DEPTH = 4;
+
+  // Base case
+  if (depth === MAX_DEPTH || rgbValues.length === 0) {
+    const color = rgbValues.reduce(
+      (prev, curr) => {
+        prev.r += curr.r;
+        prev.g += curr.g;
+        prev.b += curr.b;
+
+        return prev;
+      },
+      {
+        r: 0,
+        g: 0,
+        b: 0,
+      }
+    );
+
+    color.r = Math.round(color.r / rgbValues.length);
+    color.g = Math.round(color.g / rgbValues.length);
+    color.b = Math.round(color.b / rgbValues.length);
+
+    return [color];
+  }
+
+  /**
+   *  Recursively do the following:
+   *  1. Find the pixel channel (red,green or blue) with biggest difference/range
+   *  2. Order by this channel
+   *  3. Divide in half the rgb colors list
+   *  4. Repeat process again, until desired depth or base case
+   */
+  const componentToSortBy = findBiggestColorRange(rgbValues);
+  rgbValues.sort((p1, p2) => {
+    return p1[componentToSortBy] - p2[componentToSortBy];
+  });
+
+  const mid = rgbValues.length / 2;
+  return [
+    ...quantization(rgbValues.slice(0, mid), depth + 1),
+    ...quantization(rgbValues.slice(mid + 1), depth + 1),
+  ];
+};
+
+const getPalette = (elementId) => {
+  const image = document.getElementById(elementId);
+    // Set the canvas size to be the same as of the uploaded image
+    const canvas = new OffscreenCanvas(image.width,image.height);
+    //canvas.width = image.width;
+    //canvas.height = image.height;
+    const ctx = canvas.getContext("2d");
+debugger;
+return;
+    ctx.drawImage(image, 0, 0,64,64);
+    /**
+     * getImageData returns an array full of RGBA values
+     * each pixel consists of four values: the red value of the colour, the green, the blue and the alpha
+     * (transparency). For array value consistency reasons,
+     * the alpha is not from 0 to 1 like it is in the RGBA of CSS, but from 0 to 255.
+     */
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    // Convert the image data to RGB values so its much simpler
+    const rgbArray = buildRgb(imageData.data);
+    /**
+     * Color quantization
+     * A process that reduces the number of colors used in an image
+     * while trying to visually maintin the original image as much as possible
+     */
+    const quantColors = quantization(rgbArray, 0);
+
+
+debug(quantColors);
+
+};

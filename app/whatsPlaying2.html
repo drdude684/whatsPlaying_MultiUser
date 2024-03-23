@@ -237,9 +237,9 @@
          right: min(2cqw,2cqh);
          }
          .settingsIconBox svg {
-         width: min(5cqw,5cqh);
-         height: min(5cqw,5cqh);
-         fill: DimGray
+         width: min(10cqw,10cqh);
+         height: min(10cqw,10cqh);
+         fill: #444
          }
          .button {
            background-color: #04AA6D; /* Green */
@@ -631,6 +631,10 @@
                </div>
                <button type="reset" class="button" onclick="uiCmd('clearSettings');">Clear settings</button>
                <div id="settings_line3" class="settingsItemContent"></div>
+                <div id="settingsBackIconBox" class="backIconBox">
+                   <img id="settingsBackIcon" class="backIcon" src="assets/back-arrow-white.svg" onclick="uiCmd('closeSettings');"></img>                             
+                </div>
+
             </div>
          </div>
          <div id="playingScreen" class="screen screenOff">
