@@ -1335,11 +1335,24 @@ async function updateAmp()
   return res;
 }
 
+function clearState()
+{
+	switch(gState){
+		case 'play':{
+      // play runs its own color scheme that should be reverted when leaving that state
+      var r = document.querySelector(':root');  
+      r.style.setProperty('--secondary-bg-color', gSettings.secondaryBgColor);
+      r.style.setProperty('--main-bg-color', gSettings.mainBgColor);
+    };break;
+  }    
+}
+
 function setState(requestedState, data)
 {
 	if (gState==requestedState)
 	  return;
 	debug('Changing state to '+requestedState);  
+  clearState(gState);
 	gPrevState=gState;
 	gState=requestedState;
 	switch(requestedState){
@@ -1649,10 +1662,11 @@ const rgbToHex = (pixel) => {
 };
 
 
-const getPalette = (elementId) => {
+async function getPalette (elementId) {
 debug('establishing palette');
-  const image = document.getElementById(elementId);
+  image = document.getElementById(elementId);
   image.crossOrigin = "anonymous";
+  await new Promise(r => setTimeout(r, 100)); 
     // Set the canvas size to be the same as of the uploaded image
     const canvas = new OffscreenCanvas(image.width,image.height);
     const ctx = canvas.getContext("2d");
@@ -1674,5 +1688,22 @@ debug('establishing palette');
     const quantColors = quantization(rgbArray, 0);
     var r = document.querySelector(':root');  
     r.style.setProperty('--secondary-bg-color', rgbToHex(quantColors[15]));
-    //r.style.setProperty('--main-bg-color', rgbToHex(quantColors[15]));
+    r.style.setProperty('--main-bg-color', rgbToHex(quantColors[7]));
+    
+    document.getElementById('playPaletteItem0').style.background=rgbToHex(quantColors[0]);
+    document.getElementById('playPaletteItem1').style.background=rgbToHex(quantColors[1]);
+    document.getElementById('playPaletteItem2').style.background=rgbToHex(quantColors[2]);
+    document.getElementById('playPaletteItem3').style.background=rgbToHex(quantColors[3]);
+    document.getElementById('playPaletteItem4').style.background=rgbToHex(quantColors[4]);
+    document.getElementById('playPaletteItem5').style.background=rgbToHex(quantColors[5]);
+    document.getElementById('playPaletteItem6').style.background=rgbToHex(quantColors[6]);
+    document.getElementById('playPaletteItem7').style.background=rgbToHex(quantColors[7]);
+    document.getElementById('playPaletteItem8').style.background=rgbToHex(quantColors[8]);
+    document.getElementById('playPaletteItem9').style.background=rgbToHex(quantColors[9]);
+    document.getElementById('playPaletteItem10').style.background=rgbToHex(quantColors[10]);
+    document.getElementById('playPaletteItem11').style.background=rgbToHex(quantColors[11]);
+    document.getElementById('playPaletteItem12').style.background=rgbToHex(quantColors[12]);
+    document.getElementById('playPaletteItem13').style.background=rgbToHex(quantColors[13]);
+    document.getElementById('playPaletteItem14').style.background=rgbToHex(quantColors[14]);
+    document.getElementById('playPaletteItem15').style.background=rgbToHex(quantColors[15]);
 };

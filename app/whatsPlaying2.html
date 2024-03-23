@@ -464,6 +464,31 @@
          height: 5cqh;
          fill: white;
          }
+
+         .playPalette {
+         /* display: flex;*/
+         display:none;
+         flex-direction: column;
+         align-items: center;
+         padding: 0 0.5cqw;
+         justify-content: center;
+         flex: 0 0 10cqi;
+         font-size: 5cqh;
+         font-weight: normal;
+         text-align: center;
+         container-type: size;
+         height: 100%;
+         width: 10%;
+         }
+         .playPaletteItem {
+           display:block;
+           height: 5%;
+           width: 50px;
+           display:flex;
+           color:white;
+           border: 1px solid orange;
+         }
+         
          .playListInfo {
          display: flex;
          flex-direction: column;
@@ -701,6 +726,24 @@
                   <div id="playingMeter" class="playingMeter">
                      <span id="playingMeterValue"></span>
                   </div>
+               </div>
+               <div id="playPalette" class="playPalette">
+                  <div id="playPaletteItem0" class="playPaletteItem">0</div>
+                  <div id="playPaletteItem1" class="playPaletteItem">1</div>
+                  <div id="playPaletteItem2" class="playPaletteItem">2</div>
+                  <div id="playPaletteItem3" class="playPaletteItem">3</div>
+                  <div id="playPaletteItem4" class="playPaletteItem">4</div>
+                  <div id="playPaletteItem5" class="playPaletteItem">5</div>
+                  <div id="playPaletteItem6" class="playPaletteItem">6</div>
+                  <div id="playPaletteItem7" class="playPaletteItem">7</div>
+                  <div id="playPaletteItem8" class="playPaletteItem">8</div>
+                  <div id="playPaletteItem9" class="playPaletteItem">9</div>
+                  <div id="playPaletteItem10" class="playPaletteItem">10</div>
+                  <div id="playPaletteItem11" class="playPaletteItem">11</div>
+                  <div id="playPaletteItem12" class="playPaletteItem">12</div>
+                  <div id="playPaletteItem13" class="playPaletteItem">13</div>
+                  <div id="playPaletteItem14" class="playPaletteItem">14</div>
+                  <div id="playPaletteItem15" class="playPaletteItem">15</div>
                </div>
                <div id="playListInfo" class="playListInfo" onclick="uiCmd('togglePlayInfo');">
                   <div id="playListBox" class="playListBox">
