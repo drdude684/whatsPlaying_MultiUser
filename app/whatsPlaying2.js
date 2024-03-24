@@ -59,7 +59,7 @@ var gPlayerId;  // store this from last call
 
 var ampStatus = {power:'Undefined',volume:'undefined',sourceIndex:'Unknown',sourceName:'Unknown',mute:'Unknown',streamType:'Unknown'}; // status of associated lyngdorf device
 
-var gUiInfo = {playMeterBackgroundPlay: 'teal', playMeterBackgroundPause: 'maroon', playListLinesCalculated: false, playListLines: 1, settingsUseAmpBaseString: ''};
+var gUiInfo = {playMeterBackgroundPlay: 'var(--secondary-bg-color)', playMeterBackgroundPause: 'maroon', playListLinesCalculated: false, playListLines: 1, settingsUseAmpBaseString: ''};
 
 var gSettings={};
 
