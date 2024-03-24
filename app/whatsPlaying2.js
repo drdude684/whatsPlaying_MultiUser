@@ -1746,10 +1746,16 @@ async function getPalette (elementId) {
   var now = Date.now();
   var newImage=new Image();
   newImage.onload= function() {
+    var now2=Date.now();
     // Set the canvas size to be the same as of the uploaded image
-    const canvas = new OffscreenCanvas(newImage.width,newImage.height);
+    //const canvas = new OffscreenCanvas(newImage.width,newImage.height);
+    const imgSize=64;
+    if(newImage.width<imgSize) imgSize=newImage.width;
+    if(newImage.height<imgSize) imgSize=newImage.height;
+    const canvas = new OffscreenCanvas(imgSize,imgSize);
     const ctx = canvas.getContext("2d");
-    ctx.drawImage(newImage, 0, 0,newImage.width,newImage.height);
+    //ctx.drawImage(newImage, 0, 0,newImage.width,newImage.height);
+    ctx.drawImage(newImage, 0, 0,imgSize,imgSize);
     /**
      * getImageData returns an array full of RGBA values
      * each pixel consists of four values: the red value of the colour, the green, the blue and the alpha
@@ -1765,7 +1771,7 @@ async function getPalette (elementId) {
      * while trying to visually maintin the original image as much as possible
      */
     const quantColors = quantization(rgbArray, 0);
-    debug('palette calculation took '+(Date.now()-now)+' ms');
+    debug('palette calculation took '+(Date.now()-now)+' ('+(Date.now()-now2)+') ms');
 
     hslColors=convertRGBtoHSL(quantColors);
     saturations=hslColors.map(c => c.s);
