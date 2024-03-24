@@ -277,28 +277,33 @@
          animation: fadeIn 2.0s;
          container-type: size;
          }
-         .albumImageContent {
-         display: flex;
-         flex: 0 0 50cqi;
-         flex-direction: column;
-         align-items: center;
-         flex: 0 1 min(100cqi,100cqb);
-         width: min(100cqi,100cqb);
-         height: min(100cqi,100cqb);
-         container-type: size;
-         }
+         
          @media screen and (-webkit-min-device-pixel-ratio:0) {
-         .albumImageContent {
-         display: flex;
-         flex: 0 0 50cqi;
-         flex-direction: column;
-         align-items: center;
-         flex: 0 1 min(91cqi,91cqb);
-         width: min(96cqi,96cqb); /* safari does not apply border-box in calculating cqi and cqb, it seems */
-         height: min(91cqi,91cqb); /* safari does not apply border-box in calculating cqi and cqb, it seems */
-         container-type: size;
-         }
-         }      
+           .albumImageContent {
+           display: flex;
+           flex: 0 0 50cqi;
+           flex-direction: column;
+           align-items: center;
+           flex: 0 1 min(91cqi,91cqb);
+           width: min(96cqi,96cqb); /* safari does not apply border-box in calculating cqi and cqb, it seems */
+           height: min(91cqi,91cqb); /* safari does not apply border-box in calculating cqi and cqb, it seems */
+           container-type: size;
+           }
+         } 
+         
+         @supports (-moz-appearance:none) {
+             .albumImageContent {
+             display: flex;
+             flex: 0 0 50cqi;
+             flex-direction: column;
+             align-items: center;
+             flex: 0 1 min(100cqi,100cqb);
+             width: min(100cqi,100cqb);
+             height: min(100cqi,100cqb);
+             container-type: size;
+             }
+          }
+
          .albumImageBox {
          flex: 1 1 100%;
          display: flex;
