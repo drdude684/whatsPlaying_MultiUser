@@ -222,12 +222,11 @@ async function initialize() {
   setInterval(timerUpdates, 1000);
   
   updateViewElements(); //initial sizing etc.
- 
-	var elem = document.getElementById('settings_useAmp');
-    gUiInfo.settingsUseAmpBaseString=elem.innerHTML;
-     
+
+  var elem = document.getElementById('settings_useAmp');
+  gUiInfo.settingsUseAmpBaseString=elem.innerHTML;
+
   setState('wait');
-  
 }
 
 // -- generic helpers --
@@ -1688,7 +1687,7 @@ debug('establishing palette');
     const quantColors = quantization(rgbArray, 0);
     var r = document.querySelector(':root');  
     r.style.setProperty('--secondary-bg-color', rgbToHex(quantColors[15]));
-    r.style.setProperty('--main-bg-color', rgbToHex(quantColors[7]));
+    //r.style.setProperty('--main-bg-color', rgbToHex(quantColors[7]));
     
     document.getElementById('playPaletteItem0').style.background=rgbToHex(quantColors[0]);
     document.getElementById('playPaletteItem1').style.background=rgbToHex(quantColors[1]);
