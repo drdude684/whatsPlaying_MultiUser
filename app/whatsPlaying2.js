@@ -1527,13 +1527,14 @@ const buildRgb = (imageData) => {
   // note that we are loopin every 4!
   // for every Red, Green, Blue and Alpha
   for (let i = 0; i < imageData.length; i += 4) {
-    const rgb = {
+    const rgbl = {
       r: imageData[i],
       g: imageData[i + 1],
       b: imageData[i + 2],
+      l: (0.2126 * imageData[i] + 0.7152 * imageData[i+1] + 0.0722 * imageData[i+2]),
     };
 
-    rgbValues.push(rgb);
+    rgbValues.push(rgbl);
   }
 
   return rgbValues;
@@ -1634,7 +1635,7 @@ const quantization = (rgbValues, depth) => {
    *  3. Divide in half the rgb colors list
    *  4. Repeat process again, until desired depth or base case
    */
-  const componentToSortBy = findBiggestColorRange(rgbValues);
+  const componentToSortBy = (depth==0?"l":findBiggestColorRange(rgbValues));
   rgbValues.sort((p1, p2) => {
     return p1[componentToSortBy] - p2[componentToSortBy];
   });
@@ -1660,49 +1661,171 @@ const rgbToHex = (pixel) => {
   ).toUpperCase();
 };
 
+function hslToTxt(pixel)
+{
+  const componentToHex = (c) => {
+    const hex = c.toString(16);
+    return hex.length == 1 ? "0" + hex : hex;
+  };
+
+  return (
+    "h:" +
+    pixel.h +
+    " s:" +
+    Math.round(pixel.s) +
+    " l:" +
+    Math.round(pixel.l)
+  ).toUpperCase();
+};
+
+/**
+ * Convert RGB values to HSL
+ * This formula can be
+ * found here https://www.niwa.nu/2013/05/math-behind-colorspace-conversions-rgb-hsl/
+ */
+const convertRGBtoHSL = (rgbValues) => {
+  return rgbValues.map((pixel) => {
+    let hue,
+      saturation,
+      luminance = 0;
+
+    // first change range from 0-255 to 0 - 1
+    let redOpposite = pixel.r / 255;
+    let greenOpposite = pixel.g / 255;
+    let blueOpposite = pixel.b / 255;
+
+    const Cmax = Math.max(redOpposite, greenOpposite, blueOpposite);
+    const Cmin = Math.min(redOpposite, greenOpposite, blueOpposite);
+
+    const difference = Cmax - Cmin;
+
+    luminance = (Cmax + Cmin) / 2.0;
+
+    if (luminance <= 0.5) {
+      saturation = difference / (Cmax + Cmin);
+    } else if (luminance >= 0.5) {
+      saturation = difference / (2.0 - Cmax - Cmin);
+    }
+
+    /**
+     * If Red is max, then Hue = (G-B)/(max-min)
+     * If Green is max, then Hue = 2.0 + (B-R)/(max-min)
+     * If Blue is max, then Hue = 4.0 + (R-G)/(max-min)
+     */
+    const maxColorValue = Math.max(pixel.r, pixel.g, pixel.b);
+
+    if (maxColorValue === pixel.r) {
+      hue = (greenOpposite - blueOpposite) / difference;
+    } else if (maxColorValue === pixel.g) {
+      hue = 2.0 + (blueOpposite - redOpposite) / difference;
+    } else {
+      hue = 4.0 + (greenOpposite - blueOpposite) / difference;
+    }
+
+    hue = hue * 60; // find the sector of 60 degrees to which the color belongs
+
+    // it should be always a positive angle
+    if (hue < 0) {
+      hue = hue + 360;
+    }
+
+    // When all three of R, G and B are equal, we get a neutral color: white, grey or black.
+    if (difference === 0) {
+      return false;
+    }
+
+    return {
+      h: Math.round(hue) + 180, // plus 180 degrees because that is the complementary color
+      s: parseFloat((saturation * 100).toFixed(2)),
+      l: parseFloat((luminance * 100).toFixed(2)),
+    };
+  });
+};
 
 async function getPalette (elementId) {
-debug('establishing palette');
+  var now = Date.now();
   image = document.getElementById(elementId);
   image.crossOrigin = "anonymous";
+  // meed a bit of a wait for the very first calculation. There is probably a better way.
   await new Promise(r => setTimeout(r, 100)); 
-    // Set the canvas size to be the same as of the uploaded image
-    const canvas = new OffscreenCanvas(image.width,image.height);
-    const ctx = canvas.getContext("2d");
-    ctx.drawImage(image, 0, 0,image.width,image.height);
-    /**
-     * getImageData returns an array full of RGBA values
-     * each pixel consists of four values: the red value of the colour, the green, the blue and the alpha
-     * (transparency). For array value consistency reasons,
-     * the alpha is not from 0 to 1 like it is in the RGBA of CSS, but from 0 to 255.
-     */
-    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    // Convert the image data to RGB values so its much simpler
-    const rgbArray = buildRgb(imageData.data);
-    /**
-     * Color quantization
-     * A process that reduces the number of colors used in an image
-     * while trying to visually maintin the original image as much as possible
-     */
-    const quantColors = quantization(rgbArray, 0);
-    var r = document.querySelector(':root');  
-    r.style.setProperty('--secondary-bg-color', rgbToHex(quantColors[15]));
-    //r.style.setProperty('--main-bg-color', rgbToHex(quantColors[7]));
-    
-    document.getElementById('playPaletteItem0').style.background=rgbToHex(quantColors[0]);
-    document.getElementById('playPaletteItem1').style.background=rgbToHex(quantColors[1]);
-    document.getElementById('playPaletteItem2').style.background=rgbToHex(quantColors[2]);
-    document.getElementById('playPaletteItem3').style.background=rgbToHex(quantColors[3]);
-    document.getElementById('playPaletteItem4').style.background=rgbToHex(quantColors[4]);
-    document.getElementById('playPaletteItem5').style.background=rgbToHex(quantColors[5]);
-    document.getElementById('playPaletteItem6').style.background=rgbToHex(quantColors[6]);
-    document.getElementById('playPaletteItem7').style.background=rgbToHex(quantColors[7]);
-    document.getElementById('playPaletteItem8').style.background=rgbToHex(quantColors[8]);
-    document.getElementById('playPaletteItem9').style.background=rgbToHex(quantColors[9]);
-    document.getElementById('playPaletteItem10').style.background=rgbToHex(quantColors[10]);
-    document.getElementById('playPaletteItem11').style.background=rgbToHex(quantColors[11]);
-    document.getElementById('playPaletteItem12').style.background=rgbToHex(quantColors[12]);
-    document.getElementById('playPaletteItem13').style.background=rgbToHex(quantColors[13]);
-    document.getElementById('playPaletteItem14').style.background=rgbToHex(quantColors[14]);
-    document.getElementById('playPaletteItem15').style.background=rgbToHex(quantColors[15]);
+  // Set the canvas size to be the same as of the uploaded image
+  const canvas = new OffscreenCanvas(image.width,image.height);
+  const ctx = canvas.getContext("2d");
+  ctx.drawImage(image, 0, 0,image.width,image.height);
+  /**
+   * getImageData returns an array full of RGBA values
+   * each pixel consists of four values: the red value of the colour, the green, the blue and the alpha
+   * (transparency). For array value consistency reasons,
+   * the alpha is not from 0 to 1 like it is in the RGBA of CSS, but from 0 to 255.
+   */
+  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  // Convert the image data to RGB values so its much simpler
+  const rgbArray = buildRgb(imageData.data);
+  /**
+   * Color quantization
+   * A process that reduces the number of colors used in an image
+   * while trying to visually maintin the original image as much as possible
+   */
+  const quantColors = quantization(rgbArray, 0);
+  debug('palette calculation took '+(Date.now()-now)+' ms');
+
+  hslColors=convertRGBtoHSL(quantColors);
+  saturations=hslColors.map(c => c.s);
+  darkSats=saturations.slice(0,8);
+  maxSatDarkIndex = darkSats.indexOf(Math.max(...darkSats.filter(Boolean)));// the filter.Boolean removes undefined values before finding max
+  if(maxSatDarkIndex<0) maxSatDarkIndex=0;
+  lightSats=saturations.slice(8,16);
+  lumThreshold=30;
+  lightSatsCandidates=hslColors.slice(8,16).filter(c=>(c.l>lumThreshold)).map(c=>c.s).filter(Boolean);
+  maxSatLightIndex = lightSats.indexOf(Math.max(...lightSatsCandidates));
+  if(maxSatLightIndex<0) maxSatLightIndex=8;
+  
+  // make start color of gradient dark enough that white text will show on top of it
+  darkColor=quantColors[maxSatDarkIndex];
+  darkColorLum=0.2126 * darkColor.r + 0.7152 * darkColor.g + 0.0722 * darkColor.b;
+  if(darkColorLum>20) {
+    factor=20/darkColorLum;
+    darkColor.r=Math.round(factor*darkColor.r);
+    darkColor.g=Math.round(factor*darkColor.g);
+    darkColor.b=Math.round(factor*darkColor.b);
+  }
+
+  var r = document.querySelector(':root');  
+  r.style.setProperty('--secondary-bg-color', rgbToHex(quantColors[maxSatLightIndex+8]));
+  r.style.setProperty('--main-bg-color', rgbToHex(darkColor));
+
+  document.getElementById('playPaletteItem0').style.background=rgbToHex(quantColors[0]);
+  document.getElementById('playPaletteItem1').style.background=rgbToHex(quantColors[1]);
+  document.getElementById('playPaletteItem2').style.background=rgbToHex(quantColors[2]);
+  document.getElementById('playPaletteItem3').style.background=rgbToHex(quantColors[3]);
+  document.getElementById('playPaletteItem4').style.background=rgbToHex(quantColors[4]);
+  document.getElementById('playPaletteItem5').style.background=rgbToHex(quantColors[5]);
+  document.getElementById('playPaletteItem6').style.background=rgbToHex(quantColors[6]);
+  document.getElementById('playPaletteItem7').style.background=rgbToHex(quantColors[7]);
+  document.getElementById('playPaletteItem8').style.background=rgbToHex(quantColors[8]);
+  document.getElementById('playPaletteItem9').style.background=rgbToHex(quantColors[9]);
+  document.getElementById('playPaletteItem10').style.background=rgbToHex(quantColors[10]);
+  document.getElementById('playPaletteItem11').style.background=rgbToHex(quantColors[11]);
+  document.getElementById('playPaletteItem12').style.background=rgbToHex(quantColors[12]);
+  document.getElementById('playPaletteItem13').style.background=rgbToHex(quantColors[13]);
+  document.getElementById('playPaletteItem14').style.background=rgbToHex(quantColors[14]);
+  document.getElementById('playPaletteItem15').style.background=rgbToHex(quantColors[15]);
+
+  document.getElementById('playPaletteItem0').innerHTML=" 0:"+hslToTxt(hslColors[0]);
+  document.getElementById('playPaletteItem1').innerHTML=" 1:"+hslToTxt(hslColors[1]);
+  document.getElementById('playPaletteItem2').innerHTML=" 2:"+hslToTxt(hslColors[2]);
+  document.getElementById('playPaletteItem3').innerHTML=" 3:"+hslToTxt(hslColors[3]);
+  document.getElementById('playPaletteItem4').innerHTML=" 4:"+hslToTxt(hslColors[4]);
+  document.getElementById('playPaletteItem5').innerHTML=" 5:"+hslToTxt(hslColors[5]);
+  document.getElementById('playPaletteItem6').innerHTML=" 6:"+hslToTxt(hslColors[6]);
+  document.getElementById('playPaletteItem7').innerHTML=" 7:"+hslToTxt(hslColors[7]);
+  document.getElementById('playPaletteItem8').innerHTML=" 8:"+hslToTxt(hslColors[8]);
+  document.getElementById('playPaletteItem9').innerHTML=" 9:"+hslToTxt(hslColors[9]);
+  document.getElementById('playPaletteItem10').innerHTML=" 10:"+hslToTxt(hslColors[10]);
+  document.getElementById('playPaletteItem11').innerHTML=" 11:"+hslToTxt(hslColors[11]);
+  document.getElementById('playPaletteItem12').innerHTML=" 12:"+hslToTxt(hslColors[12]);
+  document.getElementById('playPaletteItem13').innerHTML=" 13:"+hslToTxt(hslColors[13]);
+  document.getElementById('playPaletteItem14').innerHTML=" 14:"+hslToTxt(hslColors[14]);
+  document.getElementById('playPaletteItem15').innerHTML=" 15:"+hslToTxt(hslColors[15]);
+
 };
