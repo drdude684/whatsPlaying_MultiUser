@@ -1782,7 +1782,6 @@ async function getPalette (elementId) {
     lumThreshold=80;
     lightSatsCandidates=hslColors.slice(8,16).filter(c=>(c.l<lumThreshold)).map(c=>c.s).filter(Boolean);
     maxSatLightIndex = lightSats.indexOf(Math.max(...lightSatsCandidates));
-    if(maxSatLightIndex<0) maxSatLightIndex=16;
     
     // make start color of gradient dark enough that white text will show on top of it
     darkColor=quantColors[maxSatDarkIndex];
