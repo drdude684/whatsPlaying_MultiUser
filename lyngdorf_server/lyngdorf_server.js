@@ -75,8 +75,10 @@ process.on('unhandledRejection', (err) => {
 });
 
 process.on('SIGINT', _ => {
-  debug('SIGINT received, releasing GPIO control');
-  controlSignal.unexport();
+  if (Config.shutdownOnControlSignal) {
+    debug('SIGINT received, releasing GPIO control');
+    controlSignal.unexport();
+  }
 })
 
 // create the server
