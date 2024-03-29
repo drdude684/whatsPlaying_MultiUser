@@ -3,7 +3,7 @@
  * by drdude684
  * based on
  * whatsPlaying
- * Copyright (C) Greg Brown, All rights reserved.
+ * which is Copyright (C) Greg Brown, All rights reserved.
  * https://github.com/gregtbrown/whatsPlaying
  * ***********************************************/
 
