@@ -10,7 +10,6 @@
 const Path = require('path');
 const Hapi = require('@hapi/hapi');
 const RequestLib = require('request');
-const Gpio = require('onoff').Gpio;
 
 var readline = require('readline');
 
@@ -30,31 +29,11 @@ process.stdin.on('keypress', (chunk, key) => {
 
 const Config = require('./myconfig');
 
-const controlSignal = (Config.shutdownOnControlSignal?new Gpio(3, 'in', 'rising', {debounceTimeout: 100}):null);
-
-if (Config.shutdownOnControlSignal) {
-  // GPIO stuff 
-  controlSignal.watch((err,value) => {
-  if(err) {
-    debug('error in control Signal handler');
-    throw (err);
-  }
-  if (controlSignal.readSync()) {
-    debug('control Signal handler was called, line still low');
-    if(Config.shutdownOnControlSignal)
-      shell.exec('sudo /usr/sbin/shutdown -h now');
-  } else {
-    debug('control Signal handler was called, line is now high');
-  }
-})
-
-}
-
 var shell = require('shelljs');
 var net = require('net');
 var client;
 
-var currentStatus={power:'UNKNOWN',volume:'UNKNOWN',sourceIndex:'-1',sourceName:'UNKNOWN',mute:'UNKNOWN',streamType:'UNKNOWN',controlSignal:'UNKNOWN',connected:false,demoMode:false};
+var currentStatus={power:'UNKNOWN',volume:'UNKNOWN',sourceIndex:'-1',sourceName:'UNKNOWN',mute:'UNKNOWN',streamType:'UNKNOWN',connected:false,demoMode:false};
 
 var demoLoopIndex=0;
 
@@ -73,13 +52,6 @@ process.on('unhandledRejection', (err) => {
   debug(err);
   process.exit(1);
 });
-
-process.on('SIGINT', _ => {
-  if (Config.shutdownOnControlSignal) {
-    debug('SIGINT received, releasing GPIO control');
-    controlSignal.unexport();
-  }
-})
 
 // create the server
 function createServer() {
@@ -212,8 +184,6 @@ function initDemoMode() {
 // start the server
 async function run() {
   debug('starting lyngdorf_server, press \'q\' to exit');
-  if(typeof Config.shutdownOnControlSignal === 'undefined')
-    Config.shutdownOnControlSignal = false;
   if(typeof Config.powerScreenByAmp === 'undefined')
     Config.powerScreenByAmp = false;
   if(typeof exports.refreshInterval === 'undefined')
@@ -253,12 +223,6 @@ async function run() {
 	  });  
 	  getStatus();
 	}
-  if (controlSignal)
-	  if (controlSignal.readSync()) {
-		debug('control Signal line still low');
-	  } else {
-		debug('control Signal line is high');
-	  }
     
   if (Config.refreshInterval>0)
     setInterval(refreshStatus,Config.refreshInterval);
@@ -365,8 +329,6 @@ function processResponse(resp){
 		case '8': debug('key \'8\': source \'8\'');currentStatus.sourceName='Spotify';currentStatus.sourceIndex='8';break;
 		case ' ': debug('spacebar pressed, clearing key control');lastkeyname='';break;
 	}
-	if (Config.shutdownOnControlSignal) 
-	  currentStatus.controlSignal=controlSignal.readSync();
 	//debug(currentStatus);
 	return;
 }
