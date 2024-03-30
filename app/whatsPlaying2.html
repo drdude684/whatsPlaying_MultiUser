@@ -56,6 +56,16 @@
          from {opacity: 0;}
          to {opacity: 0.2;}
          }
+         @-webkit-keyframes fadeOutToDim {
+          0%   { opacity: 1;   }
+          50%  { opacity: 1;   }
+          100% { opacity: 0,1; }
+         }
+         @keyframes fadeOutToDim {
+          0%   { opacity: 1;   }
+          50%  { opacity: 1;   }
+          100% { opacity: 0,1; }
+         }
          @-webkit-keyframes fadeToHalf {
          from {opacity: 0;}
          to {opacity: 0.5;}
@@ -235,11 +245,15 @@
          position: absolute;
          top: min(2cqw,2cqh);
          right: min(2cqw,2cqh);
+         opacity: 0.1;     
+         }
+         .settingsIconBoxAnimation {
+         animation: fadeOutToDim 10.0s;    
          }
          .settingsIconBox svg {
          width: min(10cqw,10cqh);
          height: min(10cqw,10cqh);
-         fill: #181818
+         fill: dimGray
          }
          .button {
            background-color: #04AA6D; /* Green */
@@ -472,7 +486,7 @@
 
          .playPalette {
          display: flex;
-         display:none;
+         //display:none;
          flex-direction: column;
          align-items: center;
          padding: 0 0.5cqw;
@@ -763,7 +777,7 @@
          <div id="muteLogoBox" class="logoBox">
             <img id="mutelogo" class="mutelogo" src="assets/volume-silent-icon.svg"></img>				  
          </div>
-         <div id="settingsIconBox" class="settingsIconBox" onclick="uiCmd('settings');">
+         <div id="settingsIconBox" class="settingsIconBox settingsIconBoxAnimation" onclick="uiCmd('settings');">
             <svg>
                <use xlink:href="#iconSettings"/>
             </svg>

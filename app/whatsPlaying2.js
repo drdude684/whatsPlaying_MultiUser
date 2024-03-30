@@ -217,7 +217,7 @@ async function initialize() {
   // initial update
   updateClock();
   await updateAmp();
-  await updateServer();
+  await updateServer(); // this will also ensure an initial state is set
 
   setInterval(timerUpdates, 1000);
   
@@ -225,8 +225,7 @@ async function initialize() {
 
   var elem = document.getElementById('settings_useAmp');
   gUiInfo.settingsUseAmpBaseString=elem.innerHTML;
-
-  setState('wait');
+  
 }
 
 // -- generic helpers --
@@ -494,7 +493,7 @@ async function updateServer() {
   else
     gAccessToken = res.data.token;
   if (curToken == null && gAccessToken != null) {  // switch away from error condition
-    setState('scan'); // not 100% sure this is the behaviour we should want
+    setState('wait'); // not 100% sure this is the behaviour we should want
   }
 
   if(res.error) {
@@ -1052,11 +1051,12 @@ async function getPlaybackState() {
     if (gNowPlaying.isPlaying)
       gNowPlaying.lastPlayingTime = now;  // last time we saw something playing
 
-    debug(gNowPlaying);
+    // debug(gNowPlaying);
 
     if (id == oldId) {
       updatePlayMeter(gNowPlaying);
     } else {
+      debug(gNowPlaying);
       updatePlayingScreen(gNowPlaying);
     }
   }
@@ -1352,6 +1352,12 @@ function setState(requestedState, data)
 	  return;
 	debug('Changing state to '+requestedState);  
   clearState(gState);
+  // re-animate settings icon
+  var elem =  document.getElementById('settingsIconBox'); 
+  removeClass(elem,'settingsIconBoxAnimation');
+  elem.offsetHeight;
+  addClass(elem,'settingsIconBoxAnimation');
+ 
 	gPrevState=gState;
 	gState=requestedState;
 	switch(requestedState){
@@ -1401,7 +1407,6 @@ function calculatePlayListLines() {
   var computedFontSize = parseInt(window.getComputedStyle(elem).fontSize);
   if ((computedFontSize>0)&&(elem.offsetHeight>0)) {
     gUiInfo.playListLines = Math.floor(elem.offsetHeight/(computedFontSize*1.2));
-    debug('# play list lines: ' + gUiInfo.playListLines);
     gUiInfo.playListLinesCalculated = true;
   }
   elem.innerHTML='';
@@ -1782,6 +1787,7 @@ async function getPalette (elementId) {
     lumThreshold=80;
     lightSatsCandidates=hslColors.slice(8,16).filter(c=>(c.l<lumThreshold)).map(c=>c.s).filter(Boolean);
     maxSatLightIndex = lightSats.indexOf(Math.max(...lightSatsCandidates));
+    if(maxSatLightIndex<0) maxSatLightIndex=7;
     
     // make start color of gradient dark enough that white text will show on top of it
     darkColor=quantColors[maxSatDarkIndex];
@@ -1792,7 +1798,6 @@ async function getPalette (elementId) {
       darkColor.g=Math.round(factor*darkColor.g);
       darkColor.b=Math.round(factor*darkColor.b);
     }
-
     var r = document.querySelector(':root');  
     r.style.setProperty('--secondary-bg-color', rgbToHex(quantColors[maxSatLightIndex+8]));
     r.style.setProperty('--main-bg-color', rgbToHex(darkColor));
