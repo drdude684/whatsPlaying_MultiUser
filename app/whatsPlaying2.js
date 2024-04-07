@@ -223,7 +223,7 @@ async function initialize() {
   
   updateViewElements(); //initial sizing etc.
 
-  var elem = document.getElementById('settings_useAmp');
+  var elem = document.getElementById('settings_useAmpCheckboxLabel');
   gUiInfo.settingsUseAmpBaseString=elem.innerHTML;
   
 }
@@ -400,6 +400,7 @@ function activateClock(){
 function activatePlay(){
 	selectScreen('playingScreen');
   calculatePlayListLines();
+  getPalette('playingAlbumImage');
 }
 
 function activateTv(){
@@ -423,10 +424,10 @@ function activateScan(){
 
 function activateSettings(){
 	selectScreen('settingsScreen');
-	var elem = document.getElementById('settings_useAmp');
+	var elem = document.getElementById('settings_useAmpCheckboxLabel');
 	if (Config.lyngdorfServer!=='') {
     elem.innerHTML=gUiInfo.settingsUseAmpBaseString+'Connect to Lyngdorf amplifier on address '+Config.lyngdorfServer;
-    elem = document.getElementById('settings_useAmpCheckbox');
+//    elem = document.getElementById('settings_useAmpCheckbox');
     elem.checked=Config.useAmp;
   }
   else
@@ -1352,14 +1353,15 @@ function setState(requestedState, data)
 	  return;
 	debug('Changing state to '+requestedState);  
   clearState(gState);
+	gPrevState=gState;
+	gState=requestedState;
+
   // re-animate settings icon
   var elem =  document.getElementById('settingsIconBox'); 
   removeClass(elem,'settingsIconBoxAnimation');
   elem.offsetHeight;
   addClass(elem,'settingsIconBoxAnimation');
  
-	gPrevState=gState;
-	gState=requestedState;
 	switch(requestedState){
 		case 'wait':{
 			activateClock();

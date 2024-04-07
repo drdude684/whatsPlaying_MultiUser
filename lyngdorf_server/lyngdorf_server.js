@@ -94,11 +94,11 @@ function setupRoutes(server) {
             }
   });
 
-  // control: home page (login screen)
+  // control: home page (play screen)
   server.route({
     method: 'GET',
     path: '/',
-    handler: function (req, h) { return h.file(gFileName.homePage); }    
+    handler: function (req, h) { return h.file(gFileName.playPage); }    
   });
 
   // control: play page (play screen)
