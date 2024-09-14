@@ -535,9 +535,9 @@ async function getInitialPlaybackState() {
   if (res.error)
     return res;
   if (!gNowPlaying.id) {  // nothing playing, show most recent
-    debug('nothing playing yet, fetching most recent');
+    debug('nothing playing yet, activating wait status');
     debug(gNowPlaying);
-    res = await getRecentlyPlayed();
+    res = await getWaitStatusInfo();
     if (res.error)
       return res;
     gNowPlaying = res.data;
@@ -1077,42 +1077,41 @@ async function getPlaybackState() {
     showPlayMeter(false);
   }
 
+  // update timer logic towards end of song so display is refreshed as soon as next song starts
+
+  if (gNowPlaying.duration-gNowPlaying.progress<3000) {
+    debug(gNowPlaying.duration-gNowPlaying.progress)
+    gTimer.playback.nextInterval = 3000;
+    gTimer.playback.interval = 500;
+  }
+  
+  if (prevId != gNowPlaying.id) {
+    if (gTimer.playback.nextInterval)
+      gTimer.playback.interval = gTimer.playback.nextInterval;    
+  }
+  
+  
   return {data: gNowPlaying};
 }
 
-async function getRecentlyPlayed() {
+async function getWaitStatusInfo() {
 
-  var res = await spotifyApi(spotifyRoutes.recentlyPlayed);
-  if (res.error)
-    return res;
-
-  var data = res.data;
-  debug(data);
-
+  debug('setting data values which reflect wait status')
+  
   var rtrn = {};
-  var now = Date.now();
 
-  if (data && data.items) {
-    var track = data.items[0].track;
-    var album = track.album;
-    var artist = getArtistName(track.artists);
-    var albumImage = getAlbumImage(album.images);
-    var date = getYearFromDate(album.release_date, album.release_date_precision);
-
-    rtrn.type = track.type;  // e.g. 'track'
-    rtrn.id = track.uri;     // track ID
-    rtrn.track = track.name;
-    rtrn.album = album.name;
-    rtrn.artist = artist;
-    rtrn.date = date;
-    rtrn.explicit = track.explicit;
-    rtrn.popularity = track.popularity;
-    rtrn.albumImage = albumImage;
-    rtrn.duration = track.duration_ms;
-    rtrn.time = Date.now();
-    rtrn.time = now;  // time of update
-    debug(rtrn);
-  }
+  rtrn.type = 'track';  // e.g. 'track'
+  rtrn.id = False;     // track ID
+  rtrn.track = 'Waiting for track...';
+  rtrn.album = 'Waiting for album...';
+  rtrn.artist = 'Waiting for artist...';
+  rtrn.date = '';
+  rtrn.explicit = False;
+  rtrn.popularity = 0;
+  rtrn.albumImage = None; // perhaps this will not work
+  rtrn.duration = 1;
+  rtrn.time = Date.now();
+  debug(rtrn);
 
   return {data: rtrn};
 }
@@ -1778,7 +1777,7 @@ async function getPalette (elementId) {
      * while trying to visually maintin the original image as much as possible
      */
     const quantColors = quantization(rgbArray, 0);
-    debug('palette calculation took '+(Date.now()-now)+' ('+(Date.now()-now2)+') ms');
+    // debug('palette calculation took '+(Date.now()-now)+' ('+(Date.now()-now2)+') ms');
 
     hslColors=convertRGBtoHSL(quantColors);
     saturations=hslColors.map(c => c.s);
