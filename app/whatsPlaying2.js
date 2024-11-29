@@ -398,6 +398,7 @@ function activateClock(){
 }
 
 function activatePlay(){
+  // await getWaitStatusInfo();
 	selectScreen('playingScreen');
   calculatePlayListLines();
   getPalette('playingAlbumImage');
@@ -999,13 +1000,18 @@ async function getPlaybackState() {
       var oldId = gNowPlaying.id;
 
       if (id != oldId) {
+        debug("context:")
+        debug(data.context)
+        
         // maybe get playlist name
         var playlist;
-        if ( data.context && data.context.type == 'playlist' && data.context.href ) {
+        if ( data.context && (data.context.type == 'playlist' || data.context.type == 'album') && data.context.href ) {          
           var pl = await spotifyApiDirect('GET', data.context.href);
-          if ( pl ) {
+          if ( pl.data ) {
             playlist = pl.data.name;
           }
+          else
+            playlist = "Could not obtain playlist/album name"
         }
         
         gNowPlaying.type = data.currently_playing_type;  // e.g. 'track'
