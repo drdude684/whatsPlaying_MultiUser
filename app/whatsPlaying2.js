@@ -1022,25 +1022,31 @@ async function getPlaybackState() {
             const externalURL = data.context.external_urls.spotify;
             title=''
             debug(externalURL)
+            
             // Requesting external url
-            await fetch(externalURL)
-              .then(function(response) {
-                // Extracting html as a text
-                return response.text();
-              }).then(function(html) {
-                // Converting the text into HTMLDocument
-                const doc = new DOMParser().parseFromString(html, "text/html"); // `html` is extracted text from previous step
-                // Getting text content of HTML title element
-                title = doc.querySelector('title').textContent;
-              
-                debug(title)
-                if (title.length>0) {
-                  gNowPlaying.playlist = title
-                }
-                else {   
-                  gNowPlaying.playlist = "Could not obtain playlist/album name"
-                }
-              });    
+            try {
+              await fetch(externalURL)
+                .then(function(response) {
+                  // Extracting html as a text
+                  return response.text();
+                }).then(function(html) {
+                  // Converting the text into HTMLDocument
+                  const doc = new DOMParser().parseFromString(html, "text/html"); // `html` is extracted text from previous step
+                  // Getting text content of HTML title element
+                  title = doc.querySelector('title').textContent;
+                
+                  debug(title)
+                  if (title.length>0) {
+                    gNowPlaying.playlist = title
+                  }
+                  else {   
+                    gNowPlaying.playlist = "Could not obtain playlist/album name"
+                  }
+                })
+              } catch(error) {
+                debug(error)
+                gNowPlaying.playlist = "Could not obtain playlist/album name"
+              }
           }
         }
         
@@ -1302,8 +1308,16 @@ async function spotifyApiDirect(type, route) {
       // non-200's are a success call but have invalid data, e.g. not-playing
       if (res.status != 200)
         return {data: null};
+      
+      content_type=res.headers.get('content-type')
+      if (content_type == null) 
+        return {data:null}
 
-      return {data: await res.json()};
+      if (content_type.includes('application/json'))
+        return {data: await res.json()}
+      else
+        return {data: await res.text()}
+
     }
 
     // TODO: response.status 401 means expired token, might need to force server to renew
@@ -1528,15 +1542,9 @@ async function playQueueItem(track) {
       res = await spotifyApi(spotifyRoutes.playNext, arg);   
       //debug('>>> (now playing: '+gNowPlaying.track+')');
       if (res.error) {        
-        if (res.error.includes('spotify: JSON.parse:')) {
-          //debug('no biggie, spotify\'s standard JSON parse error on skip API')
-          delete res.error
-        }
-        else {
-          debug('error occured while skipping, retrying');
-          ++errCount
-          await new Promise(r => setTimeout(r, timeOut));
-        }
+        debug('error occured while skipping, retrying');
+        ++errCount
+        await new Promise(r => setTimeout(r, timeOut));
       }
     } while (res.error&&(errCount<3));
 
