@@ -119,7 +119,6 @@ function processParameter(name,defaultValue) {
     debug('set parameter '+name+' from provided URL. New value: '+Config[name]);
     return;
   }
-  
   if (typeof(Config[name]) == 'undefined') {
     Config[name] = defaultValue;
     debug('set parameter '+name+' to hard coded default value '+defaultValue);
@@ -158,8 +157,8 @@ async function initialize() {
   processParameter('showMouse',true);
   processParameter('lyngdorfServer','');
   
-  Config.useAmp=(Config.lyngdorfServer!=='');
-  
+  processParameter('useAmp',!(Config.lyngdorfServer===""))
+
   if(gSettings!=null) {
     var r = document.querySelector(':root');  
     if(typeof(gSettings.useAmp)!=='undefined')
@@ -429,7 +428,7 @@ function activateSettings(){
 	if (Config.lyngdorfServer!=='') {
     elem.innerHTML=gUiInfo.settingsUseAmpBaseString+'Connect to Lyngdorf amplifier on address '+Config.lyngdorfServer;
 //    elem = document.getElementById('settings_useAmpCheckbox');
-    elem.checked=Config.useAmp;
+    elem.checked=!Config.useAmp;
   }
   else
     elem.innerHTML='no Lyngdorf amplifier configured, options to control connection not available';  
@@ -441,7 +440,7 @@ function closeSettings(){
   var r = document.querySelector(':root');  
 
   var elem = document.getElementById('settings_useAmpCheckbox');
-  Config.useAmp=elem.checked;
+  Config.useAmp=!elem.checked;
   
   elem = document.getElementById('settings_mainColor');
   r.style.setProperty('--main-bg-color', elem.value);
@@ -956,6 +955,11 @@ function getAlbumImage(images, largest = true) {
 }
 
 async function getPlaybackState() {
+  
+  if(gState!="play") {
+    return {data:null}
+  }
+    
   // using 'playbackState' instead of 'currentPlaying' so we can get the current playback device
   var res = await spotifyApi(spotifyRoutes.playbackState);
 
@@ -979,8 +983,8 @@ async function getPlaybackState() {
 		  if ((Config.preferedPlayer!==data.device.name)&&Config.useAmp){
 			  // not prefered device, should now go back to scanning mode
 			  debug('current device not the prefered type, returning to scanning mode');
-			  setState('scan');
-			  return {data:null};
+			  setState('scan')
+			  return {data:null}
 		  }
     }
     
@@ -1000,18 +1004,44 @@ async function getPlaybackState() {
       var oldId = gNowPlaying.id;
 
       if (id != oldId) {
-        debug("context:")
-        debug(data.context)
+        //debug("context:")
+        //debug(data.context)
         
         // maybe get playlist name
-        var playlist;
+        gNowPlaying.playlist = 'Playlist not retrieved';
+
         if ( data.context && (data.context.type == 'playlist' || data.context.type == 'album') && data.context.href ) {          
           var pl = await spotifyApiDirect('GET', data.context.href);
           if ( pl.data ) {
-            playlist = pl.data.name;
+            gNowPlaying.playlist = pl.data.name;
           }
-          else
-            playlist = "Could not obtain playlist/album name"
+          else {
+            // as of november 2024 spotify is blocking access to endpoints which contain spotify-generated playlists
+            // the below is a workaround using code found on github but it requires cors everywhere to be active in the browser
+                        
+            const externalURL = data.context.external_urls.spotify;
+            title=''
+            debug(externalURL)
+            // Requesting external url
+            await fetch(externalURL)
+              .then(function(response) {
+                // Extracting html as a text
+                return response.text();
+              }).then(function(html) {
+                // Converting the text into HTMLDocument
+                const doc = new DOMParser().parseFromString(html, "text/html"); // `html` is extracted text from previous step
+                // Getting text content of HTML title element
+                title = doc.querySelector('title').textContent;
+              
+                debug(title)
+                if (title.length>0) {
+                  gNowPlaying.playlist = title
+                }
+                else {   
+                  gNowPlaying.playlist = "Could not obtain playlist/album name"
+                }
+              });    
+          }
         }
         
         gNowPlaying.type = data.currently_playing_type;  // e.g. 'track'
@@ -1028,7 +1058,7 @@ async function getPlaybackState() {
         gNowPlaying.date = getYearFromDate(album.release_date, album.release_date_precision);
         gNowPlaying.explicit = track.explicit;
         gNowPlaying.popularity = track.popularity;
-        gNowPlaying.playlist = playlist;
+        //gNowPlaying.playlist = playlist;
         gNowPlaying.albumImage = getAlbumImage(album.images);
         gNowPlaying.duration = track.duration_ms;
 
@@ -1045,6 +1075,9 @@ async function getPlaybackState() {
           newInnerHTML = newInnerHTML+'</ol>\r\n';
           var elem=document.getElementById('playListBox');
           elem.innerHTML = newInnerHTML;
+        }
+        else {
+          debug("No queue available")
         }
       }
     }
@@ -1107,14 +1140,14 @@ async function getWaitStatusInfo() {
   var rtrn = {};
 
   rtrn.type = 'track';  // e.g. 'track'
-  rtrn.id = False;     // track ID
+  rtrn.id = false;     // track ID
   rtrn.track = 'Waiting for track...';
   rtrn.album = 'Waiting for album...';
   rtrn.artist = 'Waiting for artist...';
   rtrn.date = '';
-  rtrn.explicit = False;
+  rtrn.explicit = false;
   rtrn.popularity = 0;
-  rtrn.albumImage = None; // perhaps this will not work
+  rtrn.albumImage = null; // perhaps this will not work
   rtrn.duration = 1;
   rtrn.time = Date.now();
   debug(rtrn);
@@ -1226,12 +1259,15 @@ async function getPlaylists() {
 
   var list = [];
   var data = res.data;
-debug(data);
   if (data && data.items) {
     var items = data.items;
     for (var i = 0; i < items.length; i++) {
       var playlist = items[i];
-      debug(playlist.name);
+      if (playlist) {
+        if (playlist.name){
+          debug(playlist.name);
+        }
+      }
       
 /*
  *       var album = track.album;
@@ -1251,7 +1287,6 @@ debug(data);
       list.push(playlist);
     }
   }
-
   return list;
 }
 
@@ -1463,9 +1498,9 @@ async function playQueueItem(track) {
   var index=0;
   for (item of gNowPlaying.queue) {    
     ++index;
-    debug(item.track);
+    //debug(item.track);
     if(item.track===track) {
-      debug('found it! ' + index);
+      //debug('found it! ' + index);
       break;
     }
   }         
@@ -1488,20 +1523,29 @@ async function playQueueItem(track) {
   var res;
   for(let i=0;i<index;++i) {
     debug('skipping ('+(i+1)+'/'+index+')');
-    var errCount=0;
+    var errCount=0
     do {
       res = await spotifyApi(spotifyRoutes.playNext, arg);   
-      debug('>>> (now playing: '+gNowPlaying.track+')');
-      if (res.error) {
-        debug('error occured while skipping, retrying');
-        await new Promise(r => setTimeout(r, timeOut));
+      //debug('>>> (now playing: '+gNowPlaying.track+')');
+      if (res.error) {        
+        if (res.error.includes('spotify: JSON.parse:')) {
+          //debug('no biggie, spotify\'s standard JSON parse error on skip API')
+          delete res.error
+        }
+        else {
+          debug('error occured while skipping, retrying');
+          ++errCount
+          await new Promise(r => setTimeout(r, timeOut));
+        }
       }
     } while (res.error&&(errCount<3));
 
     if( errCount >= 3) {
       debug('could not skip to requested entry, aborting');
+      // this is not serious enough to report to the user as an error
       //setState('error',res);
-      gStateTimerMap=gOldStateTimerMap;
+      //return things to as they were
+      gTimerBlockList = prevTimerBlockList;
       return;
     }
         
