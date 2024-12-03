@@ -440,7 +440,7 @@ function closeSettings(){
   var r = document.querySelector(':root');  
 
   var elem = document.getElementById('settings_useAmpCheckbox');
-  Config.useAmp=!elem.checked;
+  Config.useAmp=elem.checked;
   
   elem = document.getElementById('settings_mainColor');
   r.style.setProperty('--main-bg-color', elem.value);
