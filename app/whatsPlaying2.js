@@ -1037,7 +1037,7 @@ async function getPlaybackState() {
                 
                   debug(title)
                   if (title.length>0) {
-                    gNowPlaying.playlist = title
+                    gNowPlaying.playlist = title.replace(" by Spotify | Spotify"," (by Spotify)")
                   }
                   else {   
                     gNowPlaying.playlist = "Could not obtain playlist/album name"
