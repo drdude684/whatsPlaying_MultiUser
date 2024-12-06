@@ -9,3 +9,4 @@ data/*
 server/data/*
 
 dummyserver.js
+config.js.*

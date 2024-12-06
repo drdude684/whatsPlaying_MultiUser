@@ -932,6 +932,17 @@ async function updatePlayingScreen(data) {
         processPalette('playingAlbumImage');
       }
     }
+    elem = document.getElementById('playingAlbumImage2');
+    if (elem) {
+      if (!data.albumImage)
+        elem.style.opacity = '0';
+      else {
+        elem.src = data.albumImage;
+        elem.style.opacity = '0.2';        
+        await waitForImage(elem);
+        processPalette('playingAlbumImage');
+      }
+    }
   }
   
 }

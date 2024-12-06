@@ -325,13 +325,26 @@
          container-type: size;
          }
          .playingAlbumImage {
-         object-fit: cover;
+         object-fit: fill;
          width: min(100cqh,100cqw);
          height: min(100cqh,100cqw);
-         flex: 0 1 min(100cqh,100cqw);
+         //flex: 0 1 min(100cqh,100cqw);
+         position: absolute;
          opacity: 0; /* hide until there is an image but retain screen space */
          border: 0.13vh solid #777;
          box-shadow: 0.52vh 0.52vh 1.30vh -0.26vh rgb(0 0 0 / 75%);
+         }
+         .playingAlbumImage_shadow {
+         object-fit: fill;
+         width: min(100cqh,100cqw);
+         height: min(25cqh,25cqw);         
+         opacity: 0; /* hide until there is an image but retain screen space */
+         border: 0.13vh solid #222;
+         box-shadow: 0.52vh 0.52vh 1.30vh -0.26vh rgb(0 0 0 / 75%);
+         position: relative;
+         transform: skewX(-45deg);
+         left: min(12.5cqh,12.5cqw);
+         top: min(37.5cqh,37.5cqw);
          }
          .playingInfo {
          display: flex;
@@ -346,6 +359,7 @@
          container-type: size;
          height: 100%;
          width: 100%;
+         z-index: 99;
          }
          .playingItem {
          margin: 2cqh;
@@ -686,6 +700,7 @@
             <div id="playingContent" class="playingContent_landscape">
                <div id="albumImageContent" class="albumImageContent">
                   <div id="albumImageBox" class="albumImageBox">
+                     <img id="playingAlbumImage2" class="playingAlbumImage_shadow"></img>
                      <img id="playingAlbumImage" class="playingAlbumImage" onclick="uiCmd('toggleControls');"></img>
                   </div>
                   <div id="controlBox" class="controlBox">

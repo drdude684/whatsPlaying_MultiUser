@@ -119,7 +119,7 @@ function setupRoutes(server) {
     method: 'GET',
     path: '/whatsPlaying2.js',
     handler: { file: { path: gFileName.script}}
-q  });
+  });
   server.route({
     method: 'GET',
     path: '/palette.js',
