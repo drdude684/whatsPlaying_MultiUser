@@ -7,30 +7,32 @@
  * https://github.com/gregtbrown/whatsPlaying
  * ***********************************************/
 
+import {getPalette, convertRGBtoHSL, rgbToHex, hslToTxt} from "./palette.js";
+
 var SVGNS = 'http://www.w3.org/2000/svg';
 var SVGXLINK = 'http://www.w3.org/1999/xlink';
 
 const spotifyRoutes = {
   playbackState: {type: 'GET', url: 'me/player'},
-  currentPlaying: {type: 'GET', url: 'me/player/currently-playing'},
-  recentlyPlayed: {type: 'GET', url: 'me/player/recently-played?limit=1'},  // items[].track instead of item
-  getPlaylist: {type: 'GET', url: 'playlists/{0}'},  // + playlist_id
-  getPlaylistImage: {type: 'GET', url: 'playlists/{0}/images'},  // + playlist_id
-  getArtist: {type: 'GET', url: 'artists/{0}'},  // + artist_id
-  getDevices: {type: 'GET', url: 'me/player/devices'},
+  //currentPlaying: {type: 'GET', url: 'me/player/currently-playing'},
+  //recentlyPlayed: {type: 'GET', url: 'me/player/recently-played?limit=1'},  // items[].track instead of item
+  //getPlaylist: {type: 'GET', url: 'playlists/{0}'},  // + playlist_id
+  //getPlaylistImage: {type: 'GET', url: 'playlists/{0}/images'},  // + playlist_id
+  //getArtist: {type: 'GET', url: 'artists/{0}'},  // + artist_id
+  //getDevices: {type: 'GET', url: 'me/player/devices'},
   getQueue: {type: 'GET', url: 'me/player/queue'},
-  getPlaylists: {type: 'GET', url: 'me/playlists'},
+  //getPlaylists: {type: 'GET', url: 'me/playlists'},
   playPlay: {type: 'PUT', url: 'me/player/play{0}'},
   playPause: {type: 'PUT', url: 'me/player/pause{0}'},
   playNext: {type: 'POST', url: 'me/player/next{0}'},
   playPrev: {type: 'POST', url: 'me/player/previous{0}'},
 
-  // time_range:
-  //   'long_term' (calculated from several years of data and including all new data as it becomes available)
-  //   'medium_term' (approximately last 6 months)
-  //   'short_term' (approximately last 4 weeks)
-  topArtists: {type: 'GET', url: 'me/top/artists?limit={0}&time_range={1}'},
-  topTracks: {type: 'GET', url: 'me/top/tracks?limit={0}&time_range={1}'},
+  //// time_range:
+  ////   'long_term' (calculated from several years of data and including all new data as it becomes available)
+  ////   'medium_term' (approximately last 6 months)
+  ////   'short_term' (approximately last 4 weeks)
+  //topArtists: {type: 'GET', url: 'me/top/artists?limit={0}&time_range={1}'},
+  //topTracks: {type: 'GET', url: 'me/top/tracks?limit={0}&time_range={1}'},
 };
 
 var gLoginUrl;
@@ -107,29 +109,14 @@ var gTimer = {
 
 var gArguments;
 
-function processParameter(name,defaultValue) {
-  if (typeof(gArguments) == 'undefined')
-    gArguments = new URLSearchParams(window.location.search);
-  // if argument was passed over URL it takes precedence
-  if (gArguments.has(name)) {
-    Config[name] = gArguments.get(name);
-    // twiddle boolean string values into actual booleans
-    if(typeof(defaultValue) == 'boolean')
-      Config[name] = (Config[name].toLowerCase() === 'true');
-    debug('set parameter '+name+' from provided URL. New value: '+Config[name]);
-    return;
-  }
-  if (typeof(Config[name]) == 'undefined') {
-    Config[name] = defaultValue;
-    debug('set parameter '+name+' to hard coded default value '+defaultValue);
-  }
-  
-  // now Config[name] exists and has value either from URL, config file, or hard coded default, in that order
-
-}
-
 // get everything started
 window.addEventListener('load', initialize, true);
+
+// track resize events so view is adjusted when required
+window.addEventListener('resize', function(event){
+ gUiInfo.playListLinesCalculated = false;
+ updateViewElements(); 
+});
 
 async function initialize() {
 
@@ -141,7 +128,7 @@ async function initialize() {
   gDefaults.secondaryBgColor=elem.value;
   
   // load settings from local storage
-  storedSettings=JSON.parse(localStorage.getItem('storedSettings'));
+  let storedSettings=JSON.parse(localStorage.getItem('storedSettings'));
   if(storedSettings!=null) {
     gSettings=storedSettings;
   }
@@ -218,7 +205,7 @@ async function initialize() {
   await updateAmp();
   await updateServer(); // this will also ensure an initial state is set
 
-  setInterval(timerUpdates, 1000);
+  setInterval(timerUpdates, 100);
   
   updateViewElements(); //initial sizing etc.
 
@@ -288,44 +275,28 @@ function format(string, args) {
   });
 };
 
-
-// -- app functions --
-
-function uiCmd(cmd) {
-
-  var arg = gLastVal.deviceId ? `?device_id=${gLastVal.deviceId}` : null;
-  
-  //temporarily disable those timers that could generate API queries
-  
-  var prevTimerBlockList=gTimerBlockList;
-  //gTimerBlockList = ["server","playback","scanning","timeBar"];
-  gTimerBlockList = ["server","scanning","timeBar"];
-  
-  switch(cmd) {
-    case 'play':           spotifyApi(gNowPlaying.isPlaying ? spotifyRoutes.playPause : spotifyRoutes.playPlay, arg);break;
-    case 'next':           spotifyApi(spotifyRoutes.playNext, arg);break;
-    case 'prev':           spotifyApi(spotifyRoutes.playPrev, arg);break;
-    case 'mute':           ampCommand('/toggleMute');break;
-    case 'volDown':        ampCommand('/volumeDown');break;
-    case 'volUp':          ampCommand('/volumeUp');break;
-    case 'toggleControls': showPlayControls(!Config.showPlayControls); break;
-    case 'togglePlayInfo': showPlayInfo(!gUiInfo.showPlayInfo);break;
-    case 'settings':       if (gState !== 'settings') setState('settings');break;
-    case 'closeSettings':  if (gState === 'settings') closeSettings();break;
-    case 'clearSettings':  clearSettings();break;
+function processParameter(name,defaultValue) {
+  if (typeof(gArguments) == 'undefined')
+    gArguments = new URLSearchParams(window.location.search);
+  // if argument was passed over URL it takes precedence
+  if (gArguments.has(name)) {
+    Config[name] = gArguments.get(name);
+    // twiddle boolean string values into actual booleans
+    if(typeof(defaultValue) == 'boolean')
+      Config[name] = (Config[name].toLowerCase() === 'true');
+    debug('set parameter '+name+' from provided URL. New value: '+Config[name]);
+    return;
+  }
+  if (typeof(Config[name]) == 'undefined') {
+    Config[name] = defaultValue;
+    debug('set parameter '+name+' to hard coded default value '+defaultValue);
   }
   
-  gTimerBlockList=prevTimerBlockList;
+  // now Config[name] exists and has value either from URL, config file, or hard coded default, in that order
 
-  updatePlayback();
-  
-  // bump up the refresh rate until we get a change
-  gTimer.playback.nextInterval = 3000;
-  gTimer.playback.interval = 250;
-  gTimer.playback.count = 0;
-  gNowPlaying.expectingChange = 10;  // max count fallback
-  
 }
+
+// -- app functions --
 
 function handleError(err) {
   debug('handling error');
@@ -370,7 +341,7 @@ function selectScreen(name) {
 
 function timerUpdates() {
   var now = Date.now();
-  for (t in gTimer) {
+  for (let t in gTimer) {
     var timer = gTimer[t];
     if (!gTimerBlockList.includes(timer.label)) {
       if (gStateTimerMap.get(gState).get(timer.label)){
@@ -382,6 +353,67 @@ function timerUpdates() {
       }
     }
   }
+}
+
+function setState(requestedState, data) {
+	if (gState==requestedState)
+	  return;
+	debug('Changing state to '+requestedState);  
+  clearState(gState);
+	let gPrevState=gState;
+	gState=requestedState;
+
+  // re-animate settings icon
+  var elem =  document.getElementById('settingsIconBox'); 
+  removeClass(elem,'settingsIconBoxAnimation');
+  elem.offsetHeight;
+  addClass(elem,'settingsIconBoxAnimation');
+ 
+	switch(requestedState){
+		case 'wait':{
+			activateClock();
+		};break;
+		case 'scan':{
+			activateScan();
+		};break;
+		case 'play':{
+			activatePlay();
+		};break;
+		case 'tv':{
+			activateTv();
+		};break;
+		case 'sleep':{
+			activateSleep();
+		};break;
+		case 'settings':{
+			activateSettings();
+		};break;
+		case 'error':{
+			if (!data)
+			data = {error: 'unknown'};			
+			if (!data.error) {
+				debug('error state requested, but no error apparent, returning to previous state');
+				gState=gPrevState;
+				return;
+			}
+			else				
+			activateError(data);			
+		};break;
+		case 'login':{
+			selectScreen('loginScreen');
+		};break;
+	}
+}
+
+function clearState() {
+	switch(gState){
+		case 'play':{
+      // play runs its own color scheme that should be reverted when leaving that state
+      var r = document.querySelector(':root');  
+      r.style.setProperty('--secondary-bg-color', gSettings.secondaryBgColor);
+      r.style.setProperty('--main-bg-color', gSettings.mainBgColor);
+    };break;
+  }    
 }
 
 function activateClock(){
@@ -397,10 +429,10 @@ function activateClock(){
 }
 
 function activatePlay(){
-  // await getWaitStatusInfo();
+  // await setWaitStatusInfo();
 	selectScreen('playingScreen');
   calculatePlayListLines();
-  getPalette('playingAlbumImage');
+  processPalette('playingAlbumImage');
 }
 
 function activateTv(){
@@ -418,7 +450,12 @@ function activateError(data){
 }
 
 function activateScan(){
-  getPlaybackState();
+  let res = setWaitStatusInfo();
+  if (res.error)
+    return res;
+  res = getPlaybackState();
+  if (res.error)
+    return res;
   selectScreen('scanningScreen');
 }
 
@@ -537,7 +574,7 @@ async function getInitialPlaybackState() {
   if (!gNowPlaying.id) {  // nothing playing, show most recent
     debug('nothing playing yet, activating wait status');
     debug(gNowPlaying);
-    res = await getWaitStatusInfo();
+    res = setWaitStatusInfo();
     if (res.error)
       return res;
     gNowPlaying = res.data;
@@ -558,9 +595,9 @@ function updatePlayerUi() {
         isOverflown(document.getElementById('playingArtistContainer')) ||
         isOverflown(document.getElementById('playingAlbumContainer')))
    {
-    res=true;
+    let res=true;
     //screen elements should be resized
-    res_temp=resizeText({element: document.getElementById('playingTrack'), parent: document.getElementById('playingTrackContainer')});
+    let res_temp=resizeText({element: document.getElementById('playingTrack'), parent: document.getElementById('playingTrackContainer')});
     res=res&&res_temp;
     res_temp=resizeText({element: document.getElementById('playingArtist'), parent: document.getElementById('playingArtistContainer')});
     res=res&&res_temp;
@@ -623,7 +660,7 @@ function updateClock() {
   if (clock)
     clock.innerHTML = timeStr_ampm(now);
 
-  bigClock = document.getElementById('bigClockLogin');
+  let bigClock = document.getElementById('bigClockLogin');
   if (bigClock)
     bigClock.innerHTML = timeStr(now);
   bigClock = document.getElementById('bigClockError');
@@ -657,7 +694,7 @@ async function reinitialize() {
   if (res && res.data)
     gLoginUrl = res.data.url;
 
-  elem = document.getElementById('loginContent');
+  let elem = document.getElementById('loginContent');
   elem.innerHTML = `Log in to Spotify via ${gLoginUrl}`;
 
   elem = document.getElementById('sleepContent');
@@ -739,7 +776,7 @@ async function updateScanning() {
         }
     }
   }
-  scanMessageElement = document.getElementById('scanningContent');
+  let scanMessageElement = document.getElementById('scanningContent');
   if (scanMessage)
     scanMessageElement.innerHTML = scanMessage;
     
@@ -834,7 +871,6 @@ function showPlayInfo(show) {
   gUiInfo.showPlayInfo = show;
 }
 
-
 function updatePlayMeter(data, interpolate) {
   if (!data || !data.isPlaying)
     return;
@@ -893,7 +929,7 @@ async function updatePlayingScreen(data) {
         elem.src = data.albumImage;
         elem.style.opacity = '1';        
         await waitForImage(elem);
-        getPalette('playingAlbumImage');
+        processPalette('playingAlbumImage');
       }
     }
   }
@@ -911,19 +947,6 @@ function getArtistName(artists) {
   }
 
   return artist;
-}
-
-function getGenre(genres) {
-  var genre = '';
-
-  // concat genres
-  for (var i = 0; i < genres.length; i++) {
-    if ( i > 0 )
-      genre += ', ';
-    genre += genres[i];
-  }
-
-  return genre;
 }
 
 function getYearFromDate(date, precision) {
@@ -1020,7 +1043,7 @@ async function getPlaybackState() {
             // the below is a workaround using code found on github but it requires cors everywhere to be active in the browser
                         
             const externalURL = data.context.external_urls.spotify;
-            title=''
+            let title=''
             debug(externalURL)
             
             // Requesting external url
@@ -1073,7 +1096,7 @@ async function getPlaybackState() {
         if (gNowPlaying.queue.length >0 ) {
           var newInnerHTML='<ol onclick="playQueueItem(event.target)">';
           var count=0;
-          for (item of gNowPlaying.queue) {
+          for (let item of gNowPlaying.queue) {
             //debug(item.track);
             if (++count < gUiInfo.playListLines) // should count actual lines, not entries
               newInnerHTML = newInnerHTML+'<li>'+item.track+'</li>\r\n';            
@@ -1139,7 +1162,7 @@ async function getPlaybackState() {
   return {data: gNowPlaying};
 }
 
-async function getWaitStatusInfo() {
+function setWaitStatusInfo() {
 
   debug('setting data values which reflect wait status')
   
@@ -1159,70 +1182,6 @@ async function getWaitStatusInfo() {
   debug(rtrn);
 
   return {data: rtrn};
-}
-
-// tbd: seems to be getting artists that come up in 'radio'
-async function getTopArtists(count = 10, range = 'medium_term') {
-  var res = await spotifyApi(spotifyRoutes.topArtists, count, range);
-  if (res.error)
-    return res;
-
-  var list = [];
-  var data = res.data;
-
-  if (data && data.items) {
-    var items = data.items;
-    for (var i = 0; i < items.length; i++) {
-      var item = items[i];
-
-      var entry = {};
-      entry.albumImage = getAlbumImage(item.images, false);
-      entry.name = item.name;
-      entry.genre = getGenre(item.genres);
-      entry.followers = item.followers.total;
-      entry.popularity = item.popularity;
-
-      list.push(entry);
-    }
-  }
-
-  return {data: list};
-}
-
-// this seems to be only getting tracks that you explicitly played
-// either directly or by explicitly playing an album
-// does not seem to include anything played through a 'radio', so sort or useless
-async function getTopTracks(count = 10, range = 'medium_term') {
-  var res = await spotifyApi(spotifyRoutes.topTracks, count, range);
-  if (res.error)
-    return res;
-
-  var list = [];
-  var data = res.data;
-
-  if (data && data.items) {
-    var items = data.items;
-    for (var i = 0; i < items.length; i++) {
-      var track = items[i];
-      var album = track.album;
-
-      var entry = {};
-      entry.type = track.type;  // e.g. 'track'
-      entry.id = track.uri;     // track ID
-      entry.track = track.name;
-      entry.album = album.name;
-      entry.artist = getArtistName(track.artists);
-      entry.date = getYearFromDate(album.release_date, album.release_date_precision);
-      entry.explicit = track.explicit;
-      entry.popularity = track.popularity;
-      entry.albumImage = getAlbumImage(album.images, false);
-      entry.duration = track.duration_ms;
-
-      list.push(entry);
-    }
-  }
-
-  return {data: list};
 }
 
 async function getQueue() {
@@ -1257,243 +1216,6 @@ async function getQueue() {
 
   return list;
 }
-
-async function getPlaylists() {
-  var res = await spotifyApi(spotifyRoutes.getPlaylists);
-  if (res.error)
-    return res;
-
-  var list = [];
-  var data = res.data;
-  if (data && data.items) {
-    var items = data.items;
-    for (var i = 0; i < items.length; i++) {
-      var playlist = items[i];
-      if (playlist) {
-        if (playlist.name){
-          debug(playlist.name);
-        }
-      }
-      
-/*
- *       var album = track.album;
-
-      var entry = {};
-      entry.type = track.type;  // e.g. 'track'
-      entry.id = track.uri;     // track ID
-      entry.track = track.name;
-      entry.album = album.name;
-      entry.artist = getArtistName(track.artists);
-      entry.date = getYearFromDate(album.release_date, album.release_date_precision);
-      entry.explicit = track.explicit;
-      entry.popularity = track.popularity;
-      entry.albumImage = getAlbumImage(album.images, false);
-      entry.duration = track.duration_ms;
-*/
-      list.push(playlist);
-    }
-  }
-  return list;
-}
-
-async function spotifyApiDirect(type, route) {
-  if (!gAccessToken) {
-    return {error: 'login'};
-  }
-  try {
-    var res = await fetch(route, {method: type, headers: {Authorization: 'Bearer ' + gAccessToken, Accept: 'application/json', 'Content-Type': 'application/json'}});
-
-    if ( res.status >= 200 && res.status < 300 )
-    {
-      // non-200's are a success call but have invalid data, e.g. not-playing
-      if (res.status != 200)
-        return {data: null};
-      
-      content_type=res.headers.get('content-type')
-      if (content_type == null) 
-        return {data:null}
-
-      if (content_type.includes('application/json'))
-        return {data: await res.json()}
-      else
-        return {data: await res.text()}
-
-    }
-
-    // TODO: response.status 401 means expired token, might need to force server to renew
-    return {error: `spotify: ${res.status}`};
-  } catch(e) {
-    return {error: `spotify: ${e.message}`};
-  }    
-}
-
-async function spotifyApi(route, ...args) {
-  var baseUri = 'https://api.spotify.com/v1/';
-  var type = 'GET';
-  var url = route;
-
-  if (typeof(route) === 'object') {
-    type = route.type;
-    url = route.url;
-  }
-
-  url = format(url, args);
-  
-  return spotifyApiDirect(type, baseUri + url);
-}
-
-async function getLocal(route)
-{
-  try {
-    var baseUri = Config.serverUrls[gCurrentServer];
-    var res = await fetch(baseUri + route);
-    if ( res.status == 200 ) {
-      res = await res.json();
-      if (res.error)
-        return res;
-      return {data: res};
-    }
-
-    return {error: `local server returned error: ${res.status}`};
-  } catch(e) {
-    return {error: `local server problem: ${e.message}`};
-  }
-}
-
-async function ampCommand(route) {
-  try {
-    var baseUri = Config.lyngdorfServer;
-    var res = await fetch(baseUri + route);
-    if ( res.status == 200 ) {
-      res = await res.json();
-      if (res.error)
-        return res;
-      return res;
-    }
-    return {error: `lyngdorf server returned error: ${res.status}`};
-  } catch(e) {
-    return {error: `lyngdorf server problem: ${e.message}`};
-  }
-}
-
-async function updateAmp()
-{
-  if (!Config.useAmp){
-    // return as if all is well
-    ampStatus.power='ON';
-    ampStatus.streamType='2';
-    return;
-  }
-  res=await ampCommand('/status');
-  ampStatus=res;
-  return res;
-}
-
-function clearState()
-{
-	switch(gState){
-		case 'play':{
-      // play runs its own color scheme that should be reverted when leaving that state
-      var r = document.querySelector(':root');  
-      r.style.setProperty('--secondary-bg-color', gSettings.secondaryBgColor);
-      r.style.setProperty('--main-bg-color', gSettings.mainBgColor);
-    };break;
-  }    
-}
-
-function setState(requestedState, data)
-{
-	if (gState==requestedState)
-	  return;
-	debug('Changing state to '+requestedState);  
-  clearState(gState);
-	gPrevState=gState;
-	gState=requestedState;
-
-  // re-animate settings icon
-  var elem =  document.getElementById('settingsIconBox'); 
-  removeClass(elem,'settingsIconBoxAnimation');
-  elem.offsetHeight;
-  addClass(elem,'settingsIconBoxAnimation');
- 
-	switch(requestedState){
-		case 'wait':{
-			activateClock();
-		};break;
-		case 'scan':{
-			activateScan();
-		};break;
-		case 'play':{
-			activatePlay();
-		};break;
-		case 'tv':{
-			activateTv();
-		};break;
-		case 'sleep':{
-			activateSleep();
-		};break;
-		case 'settings':{
-			activateSettings();
-		};break;
-		case 'error':{
-			if (!data)
-			data = {error: 'unknown'};			
-			if (!data.error) {
-				debug('error state requested, but no error apparent, returning to previous state');
-				gState=gPrevState;
-				return;
-			}
-			else				
-			activateError(data);			
-		};break;
-		case 'login':{
-			selectScreen('loginScreen');
-		};break;
-	}
-}
-
-function calculatePlayListLines() {
-    
-  if (gUiInfo.playListLinesCalculated)
-    return;
-  var pi=gUiInfo.showPlayInfo;
-  showPlayInfo(false);
-  var elem =  document.getElementById('playListBox'); 
-  elem.innerHTML='A<br>\r\nA<br>\r\nA<br>\r\nA<br>\r\nA<br>\r\nA<br>\r\nA<br>\r\nA<br>\r\nA<br>\r\nA<br>\r\nA<br>\r\nA<br>\r\nA<br>\r\nA<br>\r\nA<br>\r\nA<br>\r\nA<br>\r\nA<br>\r\nA<br>\r\nA<br>\r\nA<br>\r\nA<br>\r\nA<br>\r\nA<br>\r\nA<br>\r\n';
-  var computedFontSize = parseInt(window.getComputedStyle(elem).fontSize);
-  if ((computedFontSize>0)&&(elem.offsetHeight>0)) {
-    gUiInfo.playListLines = Math.floor(elem.offsetHeight/(computedFontSize*1.2));
-    gUiInfo.playListLinesCalculated = true;
-  }
-  elem.innerHTML='';
-  showPlayInfo(pi);
-}
-
-function updateViewElements () {
-  if (document.documentElement.clientWidth>document.documentElement.clientHeight) {
-    var elem = document.getElementById("playingContent");
-    removeClass(elem, 'playingContent_portrait');
-    addClass(elem, 'playingContent_landscape');
-  } else {
-    var elem = document.getElementById("playingContent");
-    removeClass(elem, 'playingContent_landscape');
-    addClass(elem, 'playingContent_portrait');
-  }
-  
-  calculatePlayListLines();
-  resizeText({element: document.querySelector('.playingTrack'), parent: document.querySelector('.playingTrackContainer')});
-  resizeText({element: document.querySelector('.playingArtist'), parent: document.querySelector('.playingArtistContainer')});
-  resizeText({element: document.querySelector('.playingAlbum'), parent: document.querySelector('.playingAlbumContainer')});
-  showPlayInfo(gUiInfo.showPlayInfo);
- 
-  updatePlayingScreen(gNowPlaying); 
-
-}
-
-window.addEventListener('resize', function(event){
- gUiInfo.playListLinesCalculated = false;
- updateViewElements(); 
-});
 
 async function playQueueItem(track) {
   
@@ -1564,7 +1286,173 @@ async function playQueueItem(track) {
   gTimerBlockList = prevTimerBlockList;
 }
 
+async function spotifyApiDirect(type, route) {
+  if (!gAccessToken) {
+    return {error: 'login'};
+  }
+  try {
+    var res = await fetch(route, {method: type, headers: {Authorization: 'Bearer ' + gAccessToken, Accept: 'application/json', 'Content-Type': 'application/json'}});
+
+    if ( res.status >= 200 && res.status < 300 )
+    {
+      // non-200's are a success call but have invalid data, e.g. not-playing
+      if (res.status != 200)
+        return {data: null};
+      
+      let content_type=res.headers.get('content-type')
+      if (content_type == null) 
+        return {data:null}
+
+      if (content_type.includes('application/json'))
+        return {data: await res.json()}
+      else
+        return {data: await res.text()}
+
+    }
+
+    // TODO: response.status 401 means expired token, might need to force server to renew
+    return {error: `spotify: ${res.status}`};
+  } catch(e) {
+    return {error: `spotify: ${e.message}`};
+  }    
+}
+
+async function spotifyApi(route, ...args) {
+  var baseUri = 'https://api.spotify.com/v1/';
+  var type = 'GET';
+  var url = route;
+
+  if (typeof(route) === 'object') {
+    type = route.type;
+    url = route.url;
+  }
+
+  url = format(url, args);
+  
+  return spotifyApiDirect(type, baseUri + url);
+}
+
+async function getLocal(route) {
+  try {
+    var baseUri = Config.serverUrls[gCurrentServer];
+    var res = await fetch(baseUri + route);
+    if ( res.status == 200 ) {
+      res = await res.json();
+      if (res.error)
+        return res;
+      return {data: res};
+    }
+
+    return {error: `local server returned error: ${res.status}`};
+  } catch(e) {
+    return {error: `local server problem: ${e.message}`};
+  }
+}
+
+async function ampCommand(route) {
+  try {
+    var baseUri = Config.lyngdorfServer;
+    var res = await fetch(baseUri + route);
+    if ( res.status == 200 ) {
+      res = await res.json();
+      if (res.error)
+        return res;
+      return res;
+    }
+    return {error: `lyngdorf server returned error: ${res.status}`};
+  } catch(e) {
+    return {error: `lyngdorf server problem: ${e.message}`};
+  }
+}
+
+async function updateAmp() {
+  if (!Config.useAmp){
+    // return as if all is well
+    ampStatus.power='ON';
+    ampStatus.streamType='2';
+    return;
+  }
+  res=await ampCommand('/status');
+  ampStatus=res;
+  return res;
+}
+
+export function uiCmd(cmd) {
+
+  var arg = gLastVal.deviceId ? `?device_id=${gLastVal.deviceId}` : null;
+  
+  //temporarily disable those timers that could generate API queries
+  
+  var prevTimerBlockList=gTimerBlockList;
+  //gTimerBlockList = ["server","playback","scanning","timeBar"];
+  gTimerBlockList = ["server","scanning","timeBar"];
+  
+  switch(cmd) {
+    case 'play':           spotifyApi(gNowPlaying.isPlaying ? spotifyRoutes.playPause : spotifyRoutes.playPlay, arg);break;
+    case 'next':           spotifyApi(spotifyRoutes.playNext, arg);break;
+    case 'prev':           spotifyApi(spotifyRoutes.playPrev, arg);break;
+    case 'mute':           ampCommand('/toggleMute');break;
+    case 'volDown':        ampCommand('/volumeDown');break;
+    case 'volUp':          ampCommand('/volumeUp');break;
+    case 'toggleControls': showPlayControls(!Config.showPlayControls); break;
+    case 'togglePlayInfo': showPlayInfo(!gUiInfo.showPlayInfo);break;
+    case 'settings':       if (gState !== 'settings') setState('settings');break;
+    case 'closeSettings':  if (gState === 'settings') closeSettings();break;
+    case 'clearSettings':  clearSettings();break;
+  }
+  
+  gTimerBlockList=prevTimerBlockList;
+
+  updatePlayback();
+  
+  // bump up the refresh rate until we get a change
+  gTimer.playback.nextInterval = 3000;
+  gTimer.playback.interval = 250;
+  gTimer.playback.count = 0;
+  gNowPlaying.expectingChange = 10;  // max count fallback
+  
+}
+
+function calculatePlayListLines() {
+    
+  if (gUiInfo.playListLinesCalculated)
+    return;
+  var pi=gUiInfo.showPlayInfo;
+  showPlayInfo(false);
+  var elem =  document.getElementById('playListBox'); 
+  elem.innerHTML='A<br>\r\nA<br>\r\nA<br>\r\nA<br>\r\nA<br>\r\nA<br>\r\nA<br>\r\nA<br>\r\nA<br>\r\nA<br>\r\nA<br>\r\nA<br>\r\nA<br>\r\nA<br>\r\nA<br>\r\nA<br>\r\nA<br>\r\nA<br>\r\nA<br>\r\nA<br>\r\nA<br>\r\nA<br>\r\nA<br>\r\nA<br>\r\nA<br>\r\n';
+  var computedFontSize = parseInt(window.getComputedStyle(elem).fontSize);
+  if ((computedFontSize>0)&&(elem.offsetHeight>0)) {
+    gUiInfo.playListLines = Math.floor(elem.offsetHeight/(computedFontSize*1.2));
+    gUiInfo.playListLinesCalculated = true;
+  }
+  elem.innerHTML='';
+  showPlayInfo(pi);
+}
+
+function updateViewElements () {
+  if (document.documentElement.clientWidth>document.documentElement.clientHeight) {
+    var elem = document.getElementById("playingContent");
+    removeClass(elem, 'playingContent_portrait');
+    addClass(elem, 'playingContent_landscape');
+  } else {
+    var elem = document.getElementById("playingContent");
+    removeClass(elem, 'playingContent_landscape');
+    addClass(elem, 'playingContent_portrait');
+  }
+  
+  calculatePlayListLines();
+  resizeText({element: document.querySelector('.playingTrack'), parent: document.querySelector('.playingTrackContainer')});
+  resizeText({element: document.querySelector('.playingArtist'), parent: document.querySelector('.playingArtistContainer')});
+  resizeText({element: document.querySelector('.playingAlbum'), parent: document.querySelector('.playingAlbumContainer')});
+  showPlayInfo(gUiInfo.showPlayInfo);
+ 
+  updatePlayingScreen(gNowPlaying); 
+
+}
+
 const isOverflown = ({ clientHeight, scrollHeight }) => scrollHeight > 1.01*clientHeight
+
 const resizeText = ({ element, parent }) => {
   //debug('resizing: '+parent.scrollHeight+' > '+parent.clientHeight);
   let i = 10 // let's start small
@@ -1585,317 +1473,65 @@ const resizeText = ({ element, parent }) => {
   return isOverflown(parent);
 }
 
-
-const buildRgb = (imageData) => {
-  const rgbValues = [];
-  // note that we are loopin every 4!
-  // for every Red, Green, Blue and Alpha
-  for (let i = 0; i < imageData.length; i += 4) {
-    const rgbl = {
-      r: imageData[i],
-      g: imageData[i + 1],
-      b: imageData[i + 2],
-      l: (0.2126 * imageData[i] + 0.7152 * imageData[i+1] + 0.0722 * imageData[i+2]),
-    };
-
-    rgbValues.push(rgbl);
-  }
-
-  return rgbValues;
-};
-
-/**
- * Calculate the color distance or difference between 2 colors
- *
- * further explanation of this topic
- * can be found here -> https://en.wikipedia.org/wiki/Euclidean_distance
- * note: this method is not accuarate for better results use Delta-E distance metric.
- */
-const calculateColorDifference = (color1, color2) => {
-  const rDifference = Math.pow(color2.r - color1.r, 2);
-  const gDifference = Math.pow(color2.g - color1.g, 2);
-  const bDifference = Math.pow(color2.b - color1.b, 2);
-
-  return rDifference + gDifference + bDifference;
-};
-
-// returns what color channel has the biggest difference
-const findBiggestColorRange = (rgbValues) => {
-  /**
-   * Min is initialized to the maximum value posible
-   * from there we procced to find the minimum value for that color channel
-   *
-   * Max is initialized to the minimum value posible
-   * from there we procced to fin the maximum value for that color channel
-   */
-  let rMin = Number.MAX_VALUE;
-  let gMin = Number.MAX_VALUE;
-  let bMin = Number.MAX_VALUE;
-
-  let rMax = Number.MIN_VALUE;
-  let gMax = Number.MIN_VALUE;
-  let bMax = Number.MIN_VALUE;
-
-  rgbValues.forEach((pixel) => {
-    rMin = Math.min(rMin, pixel.r);
-    gMin = Math.min(gMin, pixel.g);
-    bMin = Math.min(bMin, pixel.b);
-
-    rMax = Math.max(rMax, pixel.r);
-    gMax = Math.max(gMax, pixel.g);
-    bMax = Math.max(bMax, pixel.b);
-  });
-
-  const rRange = rMax - rMin;
-  const gRange = gMax - gMin;
-  const bRange = bMax - bMin;
-
-  // determine which color has the biggest difference
-  const biggestRange = Math.max(rRange, gRange, bRange);
-  if (biggestRange === rRange) {
-    return "r";
-  } else if (biggestRange === gRange) {
-    return "g";
-  } else {
-    return "b";
-  }
-};
-
-/**
- * Median cut implementation
- * can be found here -> https://en.wikipedia.org/wiki/Median_cut
- */
-const quantization = (rgbValues, depth) => {
-  const MAX_DEPTH = 4;
-
-  // Base case
-  if (depth === MAX_DEPTH || rgbValues.length === 0) {
-    const color = rgbValues.reduce(
-      (prev, curr) => {
-        prev.r += curr.r;
-        prev.g += curr.g;
-        prev.b += curr.b;
-
-        return prev;
-      },
-      {
-        r: 0,
-        g: 0,
-        b: 0,
+function processPalette (elementId) {
+  getPalette(elementId)
+    .then((quantColors)=>{
+      let hslColors=convertRGBtoHSL(quantColors);
+      let saturations=hslColors.map(c => c.s);
+      let darkSats=saturations.slice(0,8);
+      let maxSatDarkIndex = darkSats.indexOf(Math.max(...darkSats.filter(Boolean)));// the filter.Boolean removes undefined values before finding max
+      if(maxSatDarkIndex<0) maxSatDarkIndex=0;
+      let lightSats=saturations.slice(8,16);
+      let lumThreshold=80;
+      let lightSatsCandidates=hslColors.slice(8,16).filter(c=>(c.l<lumThreshold)).map(c=>c.s).filter(Boolean);
+      let maxSatLightIndex = lightSats.indexOf(Math.max(...lightSatsCandidates));
+      if(maxSatLightIndex<0) maxSatLightIndex=7;
+      
+      // make start color of gradient dark enough that white text will show on top of it
+      let darkColor=quantColors[maxSatDarkIndex];
+      let darkColorLum=0.2126 * darkColor.r + 0.7152 * darkColor.g + 0.0722 * darkColor.b;
+      if(darkColorLum>20) {
+        let factor=20/darkColorLum;
+        darkColor.r=Math.round(factor*darkColor.r);
+        darkColor.g=Math.round(factor*darkColor.g);
+        darkColor.b=Math.round(factor*darkColor.b);
       }
-    );
+      var r = document.querySelector(':root');  
+      r.style.setProperty('--secondary-bg-color', rgbToHex(quantColors[maxSatLightIndex+8]));
+      r.style.setProperty('--main-bg-color', rgbToHex(darkColor));
 
-    color.r = Math.round(color.r / rgbValues.length);
-    color.g = Math.round(color.g / rgbValues.length);
-    color.b = Math.round(color.b / rgbValues.length);
+      document.getElementById('playPaletteItem0').style.background=rgbToHex(quantColors[0]);
+      document.getElementById('playPaletteItem1').style.background=rgbToHex(quantColors[1]);
+      document.getElementById('playPaletteItem2').style.background=rgbToHex(quantColors[2]);
+      document.getElementById('playPaletteItem3').style.background=rgbToHex(quantColors[3]);
+      document.getElementById('playPaletteItem4').style.background=rgbToHex(quantColors[4]);
+      document.getElementById('playPaletteItem5').style.background=rgbToHex(quantColors[5]);
+      document.getElementById('playPaletteItem6').style.background=rgbToHex(quantColors[6]);
+      document.getElementById('playPaletteItem7').style.background=rgbToHex(quantColors[7]);
+      document.getElementById('playPaletteItem8').style.background=rgbToHex(quantColors[8]);
+      document.getElementById('playPaletteItem9').style.background=rgbToHex(quantColors[9]);
+      document.getElementById('playPaletteItem10').style.background=rgbToHex(quantColors[10]);
+      document.getElementById('playPaletteItem11').style.background=rgbToHex(quantColors[11]);
+      document.getElementById('playPaletteItem12').style.background=rgbToHex(quantColors[12]);
+      document.getElementById('playPaletteItem13').style.background=rgbToHex(quantColors[13]);
+      document.getElementById('playPaletteItem14').style.background=rgbToHex(quantColors[14]);
+      document.getElementById('playPaletteItem15').style.background=rgbToHex(quantColors[15]);
 
-    return [color];
-  }
-
-  /**
-   *  Recursively do the following:
-   *  1. Find the pixel channel (red,green or blue) with biggest difference/range
-   *  2. Order by this channel
-   *  3. Divide in half the rgb colors list
-   *  4. Repeat process again, until desired depth or base case
-   */
-  const componentToSortBy = (depth==0?"l":findBiggestColorRange(rgbValues));
-  rgbValues.sort((p1, p2) => {
-    return p1[componentToSortBy] - p2[componentToSortBy];
-  });
-
-  const mid = rgbValues.length / 2;
-  return [
-    ...quantization(rgbValues.slice(0, mid), depth + 1),
-    ...quantization(rgbValues.slice(mid + 1), depth + 1),
-  ];
-};
-
-const rgbToHex = (pixel) => {
-  const componentToHex = (c) => {
-    const hex = c.toString(16);
-    return hex.length == 1 ? "0" + hex : hex;
-  };
-
-  return (
-    "#" +
-    componentToHex(pixel.r) +
-    componentToHex(pixel.g) +
-    componentToHex(pixel.b)
-  ).toUpperCase();
-};
-
-function hslToTxt(pixel)
-{
-  const componentToHex = (c) => {
-    const hex = c.toString(16);
-    return hex.length == 1 ? "0" + hex : hex;
-  };
-
-  return (
-    "h:" +
-    pixel.h +
-    " s:" +
-    Math.round(pixel.s) +
-    " l:" +
-    Math.round(pixel.l)
-  ).toUpperCase();
-};
-
-/**
- * Convert RGB values to HSL
- * This formula can be
- * found here https://www.niwa.nu/2013/05/math-behind-colorspace-conversions-rgb-hsl/
- */
-const convertRGBtoHSL = (rgbValues) => {
-  return rgbValues.map((pixel) => {
-    let hue,
-      saturation,
-      luminance = 0;
-
-    // first change range from 0-255 to 0 - 1
-    let redOpposite = pixel.r / 255;
-    let greenOpposite = pixel.g / 255;
-    let blueOpposite = pixel.b / 255;
-
-    const Cmax = Math.max(redOpposite, greenOpposite, blueOpposite);
-    const Cmin = Math.min(redOpposite, greenOpposite, blueOpposite);
-
-    const difference = Cmax - Cmin;
-
-    luminance = (Cmax + Cmin) / 2.0;
-
-    if (luminance <= 0.5) {
-      saturation = difference / (Cmax + Cmin);
-    } else if (luminance >= 0.5) {
-      saturation = difference / (2.0 - Cmax - Cmin);
-    }
-
-    /**
-     * If Red is max, then Hue = (G-B)/(max-min)
-     * If Green is max, then Hue = 2.0 + (B-R)/(max-min)
-     * If Blue is max, then Hue = 4.0 + (R-G)/(max-min)
-     */
-    const maxColorValue = Math.max(pixel.r, pixel.g, pixel.b);
-
-    if (maxColorValue === pixel.r) {
-      hue = (greenOpposite - blueOpposite) / difference;
-    } else if (maxColorValue === pixel.g) {
-      hue = 2.0 + (blueOpposite - redOpposite) / difference;
-    } else {
-      hue = 4.0 + (greenOpposite - blueOpposite) / difference;
-    }
-
-    hue = hue * 60; // find the sector of 60 degrees to which the color belongs
-
-    // it should be always a positive angle
-    if (hue < 0) {
-      hue = hue + 360;
-    }
-
-    // When all three of R, G and B are equal, we get a neutral color: white, grey or black.
-    if (difference === 0) {
-      return false;
-    }
-
-    return {
-      h: Math.round(hue) + 180, // plus 180 degrees because that is the complementary color
-      s: parseFloat((saturation * 100).toFixed(2)),
-      l: parseFloat((luminance * 100).toFixed(2)),
-    };
-  });
-};
-
-async function getPalette (elementId) {
-  var now = Date.now();
-  var newImage=new Image();
-  newImage.onload= function() {
-    var now2=Date.now();
-    // Set the canvas size to be the same as of the uploaded image
-    //const canvas = new OffscreenCanvas(newImage.width,newImage.height);
-    const imgSize=64;
-    if(newImage.width<imgSize) imgSize=newImage.width;
-    if(newImage.height<imgSize) imgSize=newImage.height;
-    const canvas = new OffscreenCanvas(imgSize,imgSize);
-    const ctx = canvas.getContext("2d");
-    //ctx.drawImage(newImage, 0, 0,newImage.width,newImage.height);
-    ctx.drawImage(newImage, 0, 0,imgSize,imgSize);
-    /**
-     * getImageData returns an array full of RGBA values
-     * each pixel consists of four values: the red value of the colour, the green, the blue and the alpha
-     * (transparency). For array value consistency reasons,
-     * the alpha is not from 0 to 1 like it is in the RGBA of CSS, but from 0 to 255.
-     */
-    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    // Convert the image data to RGB values so its much simpler
-    const rgbArray = buildRgb(imageData.data);
-    /**
-     * Color quantization
-     * A process that reduces the number of colors used in an image
-     * while trying to visually maintin the original image as much as possible
-     */
-    const quantColors = quantization(rgbArray, 0);
-    // debug('palette calculation took '+(Date.now()-now)+' ('+(Date.now()-now2)+') ms');
-
-    hslColors=convertRGBtoHSL(quantColors);
-    saturations=hslColors.map(c => c.s);
-    darkSats=saturations.slice(0,8);
-    maxSatDarkIndex = darkSats.indexOf(Math.max(...darkSats.filter(Boolean)));// the filter.Boolean removes undefined values before finding max
-    if(maxSatDarkIndex<0) maxSatDarkIndex=0;
-    lightSats=saturations.slice(8,16);
-    lumThreshold=80;
-    lightSatsCandidates=hslColors.slice(8,16).filter(c=>(c.l<lumThreshold)).map(c=>c.s).filter(Boolean);
-    maxSatLightIndex = lightSats.indexOf(Math.max(...lightSatsCandidates));
-    if(maxSatLightIndex<0) maxSatLightIndex=7;
-    
-    // make start color of gradient dark enough that white text will show on top of it
-    darkColor=quantColors[maxSatDarkIndex];
-    darkColorLum=0.2126 * darkColor.r + 0.7152 * darkColor.g + 0.0722 * darkColor.b;
-    if(darkColorLum>20) {
-      factor=20/darkColorLum;
-      darkColor.r=Math.round(factor*darkColor.r);
-      darkColor.g=Math.round(factor*darkColor.g);
-      darkColor.b=Math.round(factor*darkColor.b);
-    }
-    var r = document.querySelector(':root');  
-    r.style.setProperty('--secondary-bg-color', rgbToHex(quantColors[maxSatLightIndex+8]));
-    r.style.setProperty('--main-bg-color', rgbToHex(darkColor));
-
-    document.getElementById('playPaletteItem0').style.background=rgbToHex(quantColors[0]);
-    document.getElementById('playPaletteItem1').style.background=rgbToHex(quantColors[1]);
-    document.getElementById('playPaletteItem2').style.background=rgbToHex(quantColors[2]);
-    document.getElementById('playPaletteItem3').style.background=rgbToHex(quantColors[3]);
-    document.getElementById('playPaletteItem4').style.background=rgbToHex(quantColors[4]);
-    document.getElementById('playPaletteItem5').style.background=rgbToHex(quantColors[5]);
-    document.getElementById('playPaletteItem6').style.background=rgbToHex(quantColors[6]);
-    document.getElementById('playPaletteItem7').style.background=rgbToHex(quantColors[7]);
-    document.getElementById('playPaletteItem8').style.background=rgbToHex(quantColors[8]);
-    document.getElementById('playPaletteItem9').style.background=rgbToHex(quantColors[9]);
-    document.getElementById('playPaletteItem10').style.background=rgbToHex(quantColors[10]);
-    document.getElementById('playPaletteItem11').style.background=rgbToHex(quantColors[11]);
-    document.getElementById('playPaletteItem12').style.background=rgbToHex(quantColors[12]);
-    document.getElementById('playPaletteItem13').style.background=rgbToHex(quantColors[13]);
-    document.getElementById('playPaletteItem14').style.background=rgbToHex(quantColors[14]);
-    document.getElementById('playPaletteItem15').style.background=rgbToHex(quantColors[15]);
-
-    document.getElementById('playPaletteItem0').innerHTML=" 0:"+hslToTxt(hslColors[0]);
-    document.getElementById('playPaletteItem1').innerHTML=" 1:"+hslToTxt(hslColors[1]);
-    document.getElementById('playPaletteItem2').innerHTML=" 2:"+hslToTxt(hslColors[2]);
-    document.getElementById('playPaletteItem3').innerHTML=" 3:"+hslToTxt(hslColors[3]);
-    document.getElementById('playPaletteItem4').innerHTML=" 4:"+hslToTxt(hslColors[4]);
-    document.getElementById('playPaletteItem5').innerHTML=" 5:"+hslToTxt(hslColors[5]);
-    document.getElementById('playPaletteItem6').innerHTML=" 6:"+hslToTxt(hslColors[6]);
-    document.getElementById('playPaletteItem7').innerHTML=" 7:"+hslToTxt(hslColors[7]);
-    document.getElementById('playPaletteItem8').innerHTML=" 8:"+hslToTxt(hslColors[8]);
-    document.getElementById('playPaletteItem9').innerHTML=" 9:"+hslToTxt(hslColors[9]);
-    document.getElementById('playPaletteItem10').innerHTML=" 10:"+hslToTxt(hslColors[10]);
-    document.getElementById('playPaletteItem11').innerHTML=" 11:"+hslToTxt(hslColors[11]);
-    document.getElementById('playPaletteItem12').innerHTML=" 12:"+hslToTxt(hslColors[12]);
-    document.getElementById('playPaletteItem13').innerHTML=" 13:"+hslToTxt(hslColors[13]);
-    document.getElementById('playPaletteItem14').innerHTML=" 14:"+hslToTxt(hslColors[14]);
-    document.getElementById('playPaletteItem15').innerHTML=" 15:"+hslToTxt(hslColors[15]);
-  }
-  newImage.crossOrigin = "anonymous";
-  newImage.src=document.getElementById(elementId).src;
-
+      document.getElementById('playPaletteItem0').innerHTML=" 0:"+hslToTxt(hslColors[0]);
+      document.getElementById('playPaletteItem1').innerHTML=" 1:"+hslToTxt(hslColors[1]);
+      document.getElementById('playPaletteItem2').innerHTML=" 2:"+hslToTxt(hslColors[2]);
+      document.getElementById('playPaletteItem3').innerHTML=" 3:"+hslToTxt(hslColors[3]);
+      document.getElementById('playPaletteItem4').innerHTML=" 4:"+hslToTxt(hslColors[4]);
+      document.getElementById('playPaletteItem5').innerHTML=" 5:"+hslToTxt(hslColors[5]);
+      document.getElementById('playPaletteItem6').innerHTML=" 6:"+hslToTxt(hslColors[6]);
+      document.getElementById('playPaletteItem7').innerHTML=" 7:"+hslToTxt(hslColors[7]);
+      document.getElementById('playPaletteItem8').innerHTML=" 8:"+hslToTxt(hslColors[8]);
+      document.getElementById('playPaletteItem9').innerHTML=" 9:"+hslToTxt(hslColors[9]);
+      document.getElementById('playPaletteItem10').innerHTML=" 10:"+hslToTxt(hslColors[10]);
+      document.getElementById('playPaletteItem11').innerHTML=" 11:"+hslToTxt(hslColors[11]);
+      document.getElementById('playPaletteItem12').innerHTML=" 12:"+hslToTxt(hslColors[12]);
+      document.getElementById('playPaletteItem13').innerHTML=" 13:"+hslToTxt(hslColors[13]);
+      document.getElementById('playPaletteItem14').innerHTML=" 14:"+hslToTxt(hslColors[14]);
+      document.getElementById('playPaletteItem15').innerHTML=" 15:"+hslToTxt(hslColors[15]);
+    })
 };

@@ -44,6 +44,7 @@ const gFileName = {
   playPage: 'app/whatsPlaying2.html',
   config: 'app/myconfig2.js',
   script: 'app/whatsPlaying2.js',
+  palette_module: 'app/palette.js',
 };
 
 // error handler
@@ -118,6 +119,11 @@ function setupRoutes(server) {
     method: 'GET',
     path: '/whatsPlaying2.js',
     handler: { file: { path: gFileName.script}}
+q  });
+  server.route({
+    method: 'GET',
+    path: '/palette.js',
+    handler: { file: { path: gFileName.palette_module}}
   });
 
   // static assets

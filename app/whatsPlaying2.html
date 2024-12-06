@@ -10,8 +10,6 @@
 <html>
    <head>
       <title>whatsPlaying2 - development version</title>
-      <script src="myconfig2.js"></script>
-      <script src="whatsPlaying2.js"></script>
       <style>
          :root {
          --main-bg-color: black;
@@ -552,6 +550,7 @@
       </style>
    </head>
    <body id="body">
+
       <svg display="none" width="0" height="0" xmlns="http://www.w3.org/2000/svg">
          <defs>
             <!--
@@ -786,5 +785,12 @@
             </svg>
          </div>
       </div>
+
+      <script src="./myconfig2.js"></script>
+      <script type="module" src="./whatsPlaying2.js"></script>
+      <script type="module">
+        import {uiCmd} from "./whatsPlaying2.js";
+        window.uiCmd = uiCmd;        
+      </script>
    </body>
 </html>
