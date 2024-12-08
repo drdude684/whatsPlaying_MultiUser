@@ -1374,7 +1374,7 @@ async function updateAmp() {
     ampStatus.streamType='2';
     return;
   }
-  res=await ampCommand('/status');
+  let res=await ampCommand('/status');
   ampStatus=res;
   return res;
 }
