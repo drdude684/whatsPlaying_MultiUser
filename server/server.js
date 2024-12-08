@@ -155,6 +155,14 @@ function setupRoutes(server) {
     path: '/accessToken',
     handler: function (req, h) { return getAccessToken(req, h); }
   });
+
+  // app: get title from given URL
+  server.route({
+    method: 'GET',
+    path: '/getTitle',
+    handler: function (req, h) { 
+      return getTitle(req.query); }
+  });
 }
 
 
@@ -447,6 +455,35 @@ async function refreshToken() {
   saveTokenInfo();
 
   return rtrn;
+}
+
+function getTitle(queryData) {  
+  const parseTitle = (body) => {
+    let match = body.match(/<title>([^<]*)<\/title>/) // regular expression to parse contents of the <title> tag
+    if (!match)
+      throw new Error('Unable to parse the title tag: could not find match')
+    if (typeof match[1] !== 'string')
+      throw new Error('Unable to parse the title tag: match is not a string')
+    return match[1]
+  }  
+  
+  // Requesting external url
+  return fetch(queryData.url)
+    .then(function(response) {
+      // Extracting html as a text
+      return response.text();
+    })
+    .then(function(html) {
+      // Converting the text into HTMLDocument
+      let title=parseTitle(html)
+      if (title.length>0)
+        return {title: title};
+      else
+        return {title: ('Could not obtain title for '+queryData.url)}
+    })
+    .catch((error) => {
+      return({error: 'Error while obtaining title for '+queryData.url})
+    })
 }
 
 

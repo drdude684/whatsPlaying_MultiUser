@@ -90,7 +90,7 @@ var gTimer = {
   playback: {
     label: "playback",
     callback: updatePlayback,
-    interval: 3000,
+    interval: 1000,
     lastTic: 0,
   },
   scanning: {
@@ -135,7 +135,7 @@ async function initialize() {
   
   processParameter('serverUrls',['http://localhost/']);
   processParameter('idleMinutes',5);
-  processParameter('errorTimeOut',60);
+  processParameter('errorTimeout',10);
   processParameter('showPlayerControls',true);
   processParameter('preferedPlayer','');  
   processParameter('debug',false);
@@ -446,7 +446,7 @@ function activateSleep(){
 function activateError(data){
 	selectScreen('errorScreen');
 	handleError(data);
-    gNowPlaying.errorTime = Date.now();
+  gNowPlaying.errorTime = Date.now();
 }
 
 function activateScan(){
@@ -1050,28 +1050,20 @@ async function getPlaybackState() {
             gNowPlaying.playlist = pl.data.name;
           }
           else {
-            // as of november 2024 spotify is blocking access to endpoints which contain spotify-generated playlists
-            // the below is a workaround using code found on github but it requires cors everywhere to be active in the browser
+            // as of november 2024 spotify is blocking API access to endpoints which contain spotify-generated playlists
+            // the below is a workaround by asking the server to find the title of the webpage which is still provided for such playlists
                         
             const externalURL = data.context.external_urls.spotify;
-            let title=''
             debug(externalURL)
             
             // Requesting external url
             try {
-              await fetch(externalURL)
-                .then(function(response) {
-                  // Extracting html as a text
-                  return response.text();
-                }).then(function(html) {
-                  // Converting the text into HTMLDocument
-                  const doc = new DOMParser().parseFromString(html, "text/html"); // `html` is extracted text from previous step
-                  // Getting text content of HTML title element
-                  title = doc.querySelector('title').textContent;
-                
+              await getLocal('getTitle'+'?url='+externalURL)
+                .then(function(title) {
+                  debug('getTitle response:')
                   debug(title)
-                  if (title.length>0) {
-                    gNowPlaying.playlist = title.replace(" by Spotify | Spotify"," (by Spotify)")
+                  if (title.data.title.length>0) {
+                    gNowPlaying.playlist = title.data.title.replace(" by Spotify | Spotify"," (by Spotify)")
                   }
                   else {   
                     gNowPlaying.playlist = "Could not obtain playlist/album name"
@@ -1080,7 +1072,7 @@ async function getPlaybackState() {
               } catch(error) {
                 debug(error)
                 gNowPlaying.playlist = "Could not obtain playlist/album name"
-              }
+              }            
           }
         }
         
@@ -1159,9 +1151,8 @@ async function getPlaybackState() {
   // update timer logic towards end of song so display is refreshed as soon as next song starts
 
   if (gNowPlaying.duration-gNowPlaying.progress<3000) {
-    debug(gNowPlaying.duration-gNowPlaying.progress)
-    gTimer.playback.nextInterval = 3000;
-    gTimer.playback.interval = 500;
+    gTimer.playback.nextInterval = 1000;
+    gTimer.playback.interval = 250;
   }
   
   if (prevId != gNowPlaying.id) {
@@ -1228,7 +1219,7 @@ async function getQueue() {
   return list;
 }
 
-async function playQueueItem(track) {
+export async function playQueueItem(track) {
   
   var timeOut=50;
   
